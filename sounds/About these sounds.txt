@@ -1,0 +1,9 @@
+These novel sounds are taken from 
+
+Andrés, P., Parmentier, F. B. R., & Escera, C. (2006). The effect of age on involuntary capture of attention by irrelevant sounds: a test of the frontal hypothesis of aging. Neuropsychologia, 44, 2564-2568.
+
+They have been compressed to 120ms without change in pitch.
+
+All sounds are mono.
+
+The standard sound is a 120ms sinewave tone, with a frequency of 400 Hz (as in our Experiment 1), with 10ms fade-in and 10 ms fade-out.
