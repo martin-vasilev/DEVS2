@@ -31,13 +31,14 @@ for ID in range(1, 49):
 	P3= [5, 6, 13, 14, 21, 22, 29, 30, 37, 38, 45, 46]#9, 19, 20, 21, 31, 32, 33, 43, 44, 45]
 	P4= [7, 8, 15, 16, 23, 24, 31, 32, 39, 40, 47, 48]# 12, 22, 23, 24, 34, 35, 36, 46, 47, 48]
 	
+	D1= [1,2,3,4,5,6,7,8,17,18,19,20,21,22,23,24,33,34,35,36,37,38,39,40]
+	D2= [9,10,11,12,13,14,15,16,25,26,27,28,29,30,31,32,41,42,43,44,45,46,47,48]
 	
 	if ID in S1:
-		sound= ["STD"]*int((nsent/ncond)) + ["DEV"]*int((nsent/ncond))	
+		sound= ["STD"]*int((nsent/ncond)) + ["DEV"]*int((nsent/ncond))
 		
 	if ID in S2:
 		sound= ["DEV"]*int((nsent/ncond)) + ["STD"]*int((nsent/ncond))
-		
 	####
 	
 	if ID in P1:
@@ -53,7 +54,7 @@ for ID in range(1, 49):
 		pos= [5, 2, 3, 4]* int(nsent/npos)
 	
 	
-	if ID%2==1: # odd numbers
+	if ID in D1: # odd numbers
 		delay= [0,120]*(nsent/2);
 	else: # even numbers
 		delay= [120, 0]*(nsent/2);

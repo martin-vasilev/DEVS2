@@ -18,9 +18,14 @@ design<- subset(design, item<121) # remove practice items
 table(design$item, design$sound)
 table(design$item, design$pos)
 table(design$sound, design$pos)
-b<- data.frame(table(design$item, design$delay, design$pos, design$sound))
+table(design$item, design$delay)
+table(design$sound, design$delay, design$pos)
 
-a<- data.frame(table(design$item, design$sound, design$pos))
+b<- data.frame(table(design$item, design$pos, design$sound))
 
-range(a$Freq)
+a<- data.frame(table(design$item, design$sound, design$delay))
+
+c<- data.frame(table(design$item, design$sound, design$pos, design$delay))
+
+range(c$Freq)
 
