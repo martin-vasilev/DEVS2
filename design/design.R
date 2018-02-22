@@ -28,4 +28,3 @@ a<- data.frame(table(design$item, design$sound, design$delay))
 c<- data.frame(table(design$item, design$sound, design$pos, design$delay))
 
 range(c$Freq)
-
