@@ -32,7 +32,7 @@ const.seeEye= false; % if true, shows gaze position as a dot on the screen (for 
 const.maxCross= 1800; % what is the max location for crossing a gaze-contingent boundary?
 
 const.checkPPL= false;  % if true, draws a rectangle around sentence to make sure letter width is correct
-const.expName = 'DEVS'; % used for saving data (keep at <= 5 letters)
+const.expName = 'DEVSN'; % used for saving data (keep at <= 5 letters)
 const.caltype= 'H3'; % calibration; use 'HV9' for 9-point grid
 const.saccvelthresh = 35;% degrees per second, saccade velocity threshold
 const.saccaccthresh = 9500; % degrees per second, saccade acceleration threshold	

@@ -91,6 +91,7 @@ for i=1:const.ntrials
         % Fill deviant buffer:
         [y, freq] = wavread([cd '\sounds\' 'novel' num2str(design.flnm(i)) '.wav']);
         wavedata = y';
+        wavedata(2,:)= wavedata;
         nrchannels = size(wavedata,1); % Number of rows == number of channels.
         PsychPortAudio('FillBuffer', Audio.deviant, wavedata);
         

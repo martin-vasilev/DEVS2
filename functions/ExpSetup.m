@@ -65,6 +65,7 @@ InitializePsychSound;
 
 [y, freq] = wavread([cd '\sounds\' 'standard.wav']);
 wavedata = y';
+wavedata(2,:)= wavedata;
 nrchannels = size(wavedata,1); % Number of rows == number of channels.
 
 Audio.pamaster = PsychPortAudio('Open', [], 1+8, 1, freq, nrchannels);
