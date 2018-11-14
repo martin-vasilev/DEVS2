@@ -7,7 +7,7 @@ source("functions/soundCheck.R")
 
 sound_check<- soundCheck()
 
-sound_check$flagDiff<- sound_check$
+#sound_check$flagDiff<- sound_check$
 
 sound_check<- subset(sound_check, sound!=1)
 
@@ -69,9 +69,52 @@ cat(sprintf("%f percent of data remains for analysis", (nrow(sound_check)/nobs)*
 #sound_check<- subset(sound_check, delFix<80)
 
 save(sound_check, file= "data/sound_check.Rda")
+
+library(reshape)
+DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+              measure=c("N1", "N2"), na.rm=TRUE)
+mFix<- cast(DesFix, sound_type+del ~ variable
+            ,function(x) c(M=signif(mean(x),3)
+                           , SD= sd(x) ))
+
+
 ###############################
 #   Pre-process fixations:    #
 ###############################
+
+if('devtools' %in% rownames(installed.packages())==FALSE){
+  install.packages('devtools')
+  library(devtools)
+}else{
+  library(devtools)
+}
+install_github('martin-vasilev/EMreading')
+
+library(EMreading)
+
+raw_fix<- SingleLine(data_list = "D:/Data/DEVS2", ResX = 1920, ResY = 1080, 
+                     maxtrial = 120, tBlink = 50)
+
+dataN<- cleanData(raw_fix)
+
+FD<- wordMeasures(dataN)
+
+fix<- dataN
+
+save(fix, file= "data/fix.Rda")
+write.csv(fix, "data/fix.csv")
+
+save(FD, file= "data/FD.Rda")
+write.csv(FD, "data/FD.csv")
+
+##############################33
+
+
+
+
+
+
+
 
 source("functions/paraFix.R")
 source("functions/assign_cond.R")

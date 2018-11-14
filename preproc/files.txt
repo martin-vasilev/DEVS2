@@ -1,1 +1,7 @@
-C:\Users\mvasilev\Documents\DEVS2_data\DEVSN1.asc
+D:\Data\DEVS2\DEVSN1.asc
+D:\Data\DEVS2\DEVSN2.asc
+D:\Data\DEVS2\DEVSN3.asc
+D:\Data\DEVS2\DEVSN4.asc
+D:\Data\DEVS2\DEVSN5.asc
+D:\Data\DEVS2\DEVSN6.asc
+D:\Data\DEVS2\DEVSN7.asc

@@ -4,7 +4,7 @@ re_map<- function(data, remove=T){
   dataN<- NULL
   
   for(i in 1:length(unique(data$sub))){
-    design<- read_delim(paste("design/P", toString(i), ".txt", sep= ""), 
+    design<- read_delim(paste("Experiment/design/P", toString(i), ".txt", sep= ""), 
                         " ", escape_double = FALSE, trim_ws = TRUE)
     design<- subset(design, item<121)
     
