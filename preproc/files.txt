@@ -5,3 +5,8 @@ D:\Data\DEVS2\DEVSN4.asc
 D:\Data\DEVS2\DEVSN5.asc
 D:\Data\DEVS2\DEVSN6.asc
 D:\Data\DEVS2\DEVSN7.asc
+D:\Data\DEVS2\DEVSN8.asc
+D:\Data\DEVS2\DEVSN9.asc
+D:\Data\DEVS2\DEVSN10.asc
+D:\Data\DEVS2\DEVSN11.asc
+D:\Data\DEVS2\DEVSN12.asc
