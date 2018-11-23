@@ -87,16 +87,19 @@ d$N2_M- s$N2_M
 
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
               measure=c("N1", "N2"), na.rm=TRUE)
-mFix2<- cast(DesFix, sound_type ~ variable
+mFix2<- cast(DesFix, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
 
 sound_check$sound_type<- as.factor(sound_check$sound_type)
 contrasts(sound_check$sound_type)
 
+sound_check$del<- as.factor(sound_check$del)
+contrasts(sound_check$del)
+
 library(lme4)
 
-summary(lmer(N1 ~ sound_type + (1|sub)+ (1|item), data= sound_check))
+summary(lmer(log(N1) ~ sound_type*del + (1|sub)+ (1|item), data= sound_check))
 
 ###############################
 #   Pre-process fixations:    #
