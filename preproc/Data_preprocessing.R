@@ -82,7 +82,7 @@ s<- subset(mFix, sound_type=="STD")
 d$N1_M- s$N1_M
 mean(d$N1_M- s$N1_M)
 
-d$N2_M- s$N2_M
+mean(d$N2_M- s$N2_M)
 
 
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
@@ -99,7 +99,13 @@ contrasts(sound_check$del)
 
 library(lme4)
 
-summary(lmer(log(N1) ~ sound_type*del + (1|sub)+ (1|item), data= sound_check))
+summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type|sub)+ (sound_type|item), data= sound_check))
+
+library(effects)
+
+plot(effect('sound_type', LM1))
+plot(effect('del', LM1))
+plot(effect('sound_type:del', LM1))
 
 ###############################
 #   Pre-process fixations:    #
