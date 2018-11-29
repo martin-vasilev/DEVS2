@@ -99,7 +99,8 @@ contrasts(sound_check$del)
 
 library(lme4)
 
-summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type|sub)+ (sound_type|item), data= sound_check))
+summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                  data= sound_check))
 
 library(effects)
 
