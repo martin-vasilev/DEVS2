@@ -36,14 +36,15 @@ sound_check$Trialt<- sound_check$trialEnd- sound_check$trialStart
 # further development:
 # CHANGE DEFINITION OF HOOK!: crossing is not a hook if next fix is within 1 ppl 
 
-save(sound_check, file= "preproc/sound_check.Rda")
-write.csv(sound_check, "preproc/sound_check.csv")
-
+save(sound_check, file= "preproc/sound_check_t.Rda")
+write.csv(sound_check, "preproc/sound_check_t.csv")
+rm(sound_check)
 
 ##########################
 #      filter data:
 ##########################
 
+load("preproc/sound_check_t.Rda")
 nobs<- nrow(sound_check)
 
 # remove blinks on critical words:
@@ -99,8 +100,13 @@ contrasts(sound_check$del)
 
 library(lme4)
 
-summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type|item),
                   data= sound_check))
+
+
+library(mgcv)
+summary(gam(log(N1) ~ sound_type*del + s(order) + s(order, by=del:sound_type),
+            data= sound_check, family=gaussian()))
 
 library(effects)
 
@@ -124,18 +130,100 @@ library(EMreading)
 
 raw_fix<- SingleLine(data_list = "D:/Data/DEVS2", ResX = 1920, ResY = 1080, 
                      maxtrial = 120, tBlink = 50)
+save(raw_fix, file= "data/raw_fix_temp.Rda")
 
+# clean up data:
 dataN<- cleanData(raw_fix)
+save(dataN, file= "data/dataN.Rda")
 
 FD<- wordMeasures(dataN)
 
 fix<- dataN
 
 save(fix, file= "data/fix.Rda")
-write.csv(fix, "data/fix.csv")
+write.csv2(fix, "data/fix.csv")
 
 save(FD, file= "data/FD.Rda")
 write.csv(FD, "data/FD.csv")
+
+# remove outliers:
+out<- which(FD$FFD>800 | FD$GD>2000 | FD$TVT>4000)
+a<- FD[out,]
+
+if(length(out)>0){
+  FD<- FD[-out,]
+}
+
+FD$keep<- 0
+FD$keepN1<- 0
+FD$sound<- NA
+FD$del<- NA
+FD$order<- NA
+
+sound_check$sound_type<- as.character(sound_check$sound_type)
+sound_check$del<- as.character(sound_check$del)
+
+for(i in 1:nrow(FD)){
+  a<- which(sound_check$sub== FD$sub[i] & sound_check$item== FD$item[i] & sound_check$word== FD$word[i])
+  
+  if(length(a)>0){
+    FD$keep[i]<- 1
+    FD$sound[i]<- sound_check$sound_type[a]
+    FD$del[i]<- sound_check$del[a]
+    FD$order[i]<- sound_check$order[a]
+    
+    b<- which(FD$item== FD$item[i] & FD$sub== FD$sub[i] & FD$word== FD$word[i]+1)
+    if(length(b>0)){
+      FD$keepN1[b]<- 1
+      FD$sound[b]<- sound_check$sound_type[a]
+    }
+    
+  }
+}
+
+TW<- subset(FD, keep==1)
+N1<- subset(FD, keepN1==1)
+
+FD<- TW
+save(FD, file='data/FD.Rda')
+save(N1, file='data/N1.Rda')
+
+
+
+library(reshape)
+DesFix<- melt(TW, id=c('sub', 'item', 'cond', 'sound', 'del'), 
+              measure=c("FFD", "SFD", "GD", "TVT"), na.rm=TRUE)
+m<- cast(DesFix, sound+del ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+
+
+TW$sound<- as.factor(TW$sound)
+contrasts(TW$sound)
+
+TW$del<- as.factor(TW$del)
+contrasts(TW$del)
+
+library(lme4)
+
+# FFD:
+summary(LM1<-lmer(log(FFD) ~ sound*del + (sound+del|sub)+ (sound|item), data= TW, REML=T))
+
+# SFD:
+summary(LM1<-lmer(log(SFD) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
+
+# GD:
+summary(LM1<-lmer(log(GD) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
+
+# TVT:
+summary(LM1<-lmer(log(TVT) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
+
+
+library(mgcv)
+summary(gam(log(TVT) ~ sound*del + s(order) + s(order, by=del:sound),
+            data= TW, family=gaussian()))
+
+
 
 ##############################33
 
