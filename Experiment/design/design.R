@@ -5,7 +5,7 @@ library(readr)
 
 design<- NULL
 
-for(i in 1:48){
+for(i in 1:64){
   t <- read_delim(paste("Experiment/design/P", toString(i), ".txt", sep=''), 
                        " ", escape_double = FALSE, trim_ws = TRUE)
   

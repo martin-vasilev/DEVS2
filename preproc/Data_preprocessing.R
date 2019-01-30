@@ -69,11 +69,13 @@ cat(sprintf("%f percent of data remains for analysis", (nrow(sound_check)/nobs)*
 
 #sound_check<- subset(sound_check, delFix<80)
 
+sound_check$next_sacc<- abs(sound_check$N1x- sound_check$N2x)/14
+
 save(sound_check, file= "data/sound_check.Rda")
 
 library(reshape)
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
-              measure=c("N1", "N2"), na.rm=TRUE)
+              measure=c("N1", "N2", "next_sacc"), na.rm=TRUE)
 mFix<- cast(DesFix, sound_type+sub ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
@@ -85,9 +87,10 @@ mean(d$N1_M- s$N1_M)
 
 mean(d$N2_M- s$N2_M)
 
+mean(d$next_sacc_M- s$next_sacc_M)
 
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
-              measure=c("N1", "N2"), na.rm=TRUE)
+              measure=c("N1", "N2", "next_sacc"), na.rm=TRUE)
 mFix2<- cast(DesFix, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
@@ -103,9 +106,14 @@ library(lme4)
 summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type|item),
                   data= sound_check))
 
+summary(LM2<-lmer(next_sacc ~ sound_type*del + (sound_type|sub)+ (sound_type|item),
+                  data= sound_check))
+
+summary(GM1<- glmer(N1reg ~ sound_type*del + (sound_type|sub)+ (del|item), family= binomial,
+                  data= sound_check))
 
 library(mgcv)
-summary(gam(log(N1) ~ sound_type*del + s(order) + s(order, by=del:sound_type),
+summary(gam(log(N1) ~ sound_type*del  + s(order, by=sound_type),
             data= sound_check, family=gaussian()))
 
 library(effects)
@@ -223,6 +231,48 @@ library(mgcv)
 summary(gam(log(TVT) ~ sound*del + s(order) + s(order, by=del:sound),
             data= TW, family=gaussian()))
 
+
+
+
+
+
+fix$keep<- 0
+fix$keepN1<- 0
+fix$sound<- NA
+fix$del<- NA
+
+for(i in 1:nrow(fix)){
+  a<- which(sound_check$sub== fix$sub[i] & sound_check$item== fix$item[i] & sound_check$word== fix$word[i])
+  
+  if(length(a)>0){
+    fix$keep[i]<- 1
+    fix$sound[i]<- sound_check$sound_type[a]
+    fix$del[i]<- sound_check$del[a]
+    
+    b<- which(fix$item== fix$item[i] & fix$sub== fix$sub[i] & fix$word== fix$word[i]+1)
+    if(length(b>0)){
+      fix$keepN1[b]<- 1
+      fix$sound[b]<- sound_check$sound_type[a]
+    }
+    
+  }
+}
+
+TWraw<- subset(fix, keep==1 & regress==0)
+
+DesFix<- melt(TWraw, id=c('sub', 'item', 'cond', 'sound', 'del'), 
+              measure=c("sacc_dur", "sacc_len"), na.rm=TRUE)
+m<- cast(DesFix, sound+del ~ variable
+         ,function(x) c(M=signif(mean(x),3)
+                        , SD= sd(x) ))
+
+
+
+DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+              measure=c("Trialt"), na.rm=TRUE)
+m<- cast(DesFix, sound_type ~ variable
+         ,function(x) c(M=signif(mean(x),3)
+                        , SD= sd(x) ))
 
 
 ##############################33
