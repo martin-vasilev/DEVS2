@@ -2,7 +2,7 @@ nFix<- function(data){
   
   sub<- NULL; item<- NULL; seq<- NULL; cond<- NULL; word<- NULL; p<- NULL
   nitems<- NULL; n<- NULL; p1<- NULL; p2<- NULL;
-  dataN<- NULL; dataT<- NULL; 
+  dataN<- NULL; dataT<- NULL; delay= NULL;
   nfix1<- NULL; nfix2<-NULL; nfixAll<- NULL; sound<- NULL
   
   cat("Processing data for subject... ");
@@ -24,12 +24,13 @@ nFix<- function(data){
       seq<- n$seq[1]
       cond<- n$cond[1]
       sound<- n$sound[1]
+      delay<- n$del[1]
           
           
       # first-pass fixations:
-      p1<- subset(n, intrasent_regr==0)
+      p1<- subset(n, regress==0)
       # second-pass:
-      p2<- subset(n, intrasent_regr==1)
+      p2<- subset(n, regress==1)
             
           
       ## code fixations
@@ -38,9 +39,9 @@ nFix<- function(data){
       nfixAll<- nrow(p1)+ nrow(p2)
           
         
-      dataT<- data.frame(sub, item, word, seq, cond, nfix1, nfix2, nfixAll, sound)
+      dataT<- data.frame(sub, item, word, seq, cond, nfix1, nfix2, nfixAll, sound, delay)
       sub<- NULL; item<- NULL; seq<- NULL; cond<- NULL; word<- NULL; p<- NULL;
-      p1<- NULL; p2<- NULL; sound<- NULL
+      p1<- NULL; p2<- NULL; sound<- NULL; delay= NULL
       nfix1<- NULL; nfix2<- NULL; nfixAll<-NULL; 
         
       dataN<- rbind(dataN, dataT)

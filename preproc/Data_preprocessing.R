@@ -3,6 +3,27 @@
 
 rm(list=ls())
 
+
+# Question accuracy:
+library(EMreading)
+
+q<- Question(data_list = "D:/Data/DEVS2", maxtrial = 120)
+save(q, file= "Data/quest.Rda")
+
+library(reshape)
+DesQuest<- melt(q, id=c('sub', 'item', 'cond'), 
+              measure=c("accuracy"), na.rm=TRUE)
+mQuest<- cast(DesQuest, sub ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+min(mQuest$accuracy_M)
+
+sprintf("All participants had comprehension accuracy greater than %g percent", min(mQuest$accuracy_M))
+sprintf("Mean accuracy: %g percent", mean(mQuest$accuracy_M))
+
+
+
+# First fixation:
 source("functions/soundCheck.R")
 
 sound_check<- soundCheck()
@@ -62,10 +83,17 @@ nhook<- nrow(sound_check)
 sound_check<- subset(sound_check, hook=="No")
 nhook<- ((nrow(sound_check)-nhook)/nobs)*100
 
+outliers<- which(sound_check$N1<80 | sound_check$N1>1000)
+outTab<- sound_check[outliers,]
+sound_check<- sound_check[-outliers,]
+noutliers<- nrow(outTab)
+
 cat(sprintf("%f percent of data excluded due to blinks", (nblinks/nobs)*100))
 cat(sprintf("%f percent of data excluded due to in-fixations", (infixn/nobs)*100))
 cat(sprintf("%f percent of data excluded due to hooks", abs(nhook)))
+cat(sprintf("%f percent of data excluded as outliers (<80; > 1000ms)",  (noutliers/nobs)*100))
 cat(sprintf("%f percent of data remains for analysis", (nrow(sound_check)/nobs)*100))
+
 
 #sound_check<- subset(sound_check, delFix<80)
 
@@ -73,9 +101,32 @@ sound_check$next_sacc<- abs(sound_check$N1x- sound_check$N2x)/14
 
 save(sound_check, file= "data/sound_check.Rda")
 
+
+### subset data for DPA analysis:
+
+DPA<- sound_check[,c("sub", "N1", "cond", "del")]
+
+colnames(DPA)<- c("subject", "duration", "condition", "delay")
+DPA$condition<- DPA$condition-1
+
+DPA_0ms<- subset(DPA, delay==0)
+DPA_0ms$delay<- NULL
+DPA_0ms<- DPA_0ms[with(DPA_0ms, order(condition,subject)), ]
+
+
+DPA_120ms<- subset(DPA, delay==120)
+DPA_120ms$delay<- NULL
+DPA_120ms<- DPA_120ms[with(DPA_120ms, order(condition,subject)), ]
+
+# save files:
+write.table(DPA_0ms, file= "DPA/DPA_0ms.txt", sep = "\t", quote = F, row.names = F)
+
+write.table(DPA_120ms, file= "DPA/DPA_120ms.txt", sep = "\t", quote = F, row.names = F)
+
+
 library(reshape)
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
-              measure=c("N1", "N2", "next_sacc"), na.rm=TRUE)
+              measure=c("N1", "N2"), na.rm=TRUE)
 mFix<- cast(DesFix, sound_type+sub ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
@@ -87,10 +138,8 @@ mean(d$N1_M- s$N1_M)
 
 mean(d$N2_M- s$N2_M)
 
-mean(d$next_sacc_M- s$next_sacc_M)
-
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
-              measure=c("N1", "N2", "next_sacc"), na.rm=TRUE)
+              measure=c("N1", "N2", "sacc_dur", "sacc_peak", 'sacc_vel', 'sacc_ampl'), na.rm=TRUE)
 mFix2<- cast(DesFix, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
@@ -103,17 +152,38 @@ contrasts(sound_check$del)
 
 library(lme4)
 
-summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type|item),
+summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
                   data= sound_check))
 
-summary(LM2<-lmer(next_sacc ~ sound_type*del + (sound_type|sub)+ (sound_type|item),
-                  data= sound_check))
+s2<- sound_check[sound_check$sacc_peak<1000,]
+
+summary(LM2<-lmer(sacc_ampl ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                  data= s2))
+
+summary(LM2<-lmer(sacc_peak ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                  data= s2))
+
+library(effects)
+plot(effect('sound_type:del', LM2))
 
 summary(GM1<- glmer(N1reg ~ sound_type*del + (sound_type|sub)+ (del|item), family= binomial,
                   data= sound_check))
 
+summary(LM3<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (sound_type|item),
+                    data= sound_check))
+
 library(mgcv)
-summary(gam(log(N1) ~ sound_type*del  + s(order, by=sound_type),
+
+FixGAM = bam(log(N1) ~ sound_type*del +
+                 s(order, sub, bs="fs", m=1)+
+                 s(sub, sound, bs="re") +
+                 s(sub, del, bs="re"),# +
+                 #s(order, by=Int),
+                rho=0.15, # AR.start=FirstTrial,
+               data= sound_check, method="fREML", discrete=TRUE)
+summary(kkl.gamD)
+
+summary(G1<-gam(log(N1) ~ sound_type*del  + s(order, by=sound_type),
             data= sound_check, family=gaussian()))
 
 library(effects)
@@ -121,6 +191,12 @@ library(effects)
 plot(effect('sound_type', LM1))
 plot(effect('del', LM1))
 plot(effect('sound_type:del', LM1))
+
+plot(effect('sound_type:del', LM3))
+
+### 
+
+
 
 ###############################
 #   Pre-process fixations:    #
@@ -205,6 +281,7 @@ m<- cast(DesFix, sound+del ~ variable
              ,function(x) c(M=signif(mean(x),3)
                             , SD= sd(x) ))
 
+TW<- FD
 
 TW$sound<- as.factor(TW$sound)
 contrasts(TW$sound)
@@ -214,27 +291,38 @@ contrasts(TW$del)
 
 library(lme4)
 
-# FFD:
-summary(LM1<-lmer(log(FFD) ~ sound*del + (sound+del|sub)+ (sound|item), data= TW, REML=T))
+TW$altGaze= TW$GD- TW$FFD
+TW$altTVT= TW$TVT- TW$GD
 
-# SFD:
-summary(LM1<-lmer(log(SFD) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
+for(i in 1:nrow(TW)){
+  if(!is.na(TW$altGaze[i])){
+    if(TW$altGaze[i]==0){
+      TW$altGaze[i]= NA
+    }
+  }
+  if(!is.na(TW$altTVT[i])){
+    if(TW$altTVT[i]==0){
+      TW$altTVT[i]= NA
+    }
+  }
+}
 
 # GD:
-summary(LM1<-lmer(log(GD) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
+summary(LM1<-lmer(log(altGaze) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
 
 # TVT:
-summary(LM1<-lmer(log(TVT) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
+summary(LM1<-lmer(log(altTVT) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
 
 
 library(mgcv)
-summary(gam(log(TVT) ~ sound*del + s(order) + s(order, by=del:sound),
+summary(gam(log(altGaze) ~ sound*del + s(order) + s(order, by=del:sound),
             data= TW, family=gaussian()))
 
 
 
 
-
+sound_check$sound_type<- as.character(sound_check$sound_type)
+sound_check$del<- as.character(sound_check$del)
 
 fix$keep<- 0
 fix$keepN1<- 0
@@ -258,7 +346,11 @@ for(i in 1:nrow(fix)){
   }
 }
 
-TWraw<- subset(fix, keep==1 & regress==0)
+TWraw<- subset(fix, keep==1)
+
+
+source("functions/nFix.R")
+nFix<- nFix(TWraw)
 
 DesFix<- melt(TWraw, id=c('sub', 'item', 'cond', 'sound', 'del'), 
               measure=c("sacc_dur", "sacc_len"), na.rm=TRUE)
@@ -266,6 +358,12 @@ m<- cast(DesFix, sound+del ~ variable
          ,function(x) c(M=signif(mean(x),3)
                         , SD= sd(x) ))
 
+
+DesnFix<- melt(nFix, id=c('sub', 'item', 'cond', 'sound', 'delay'), 
+              measure=c("nfix1", "nfixAll"), na.rm=TRUE)
+mnFix<- cast(DesnFix, sound+delay ~ variable
+         ,function(x) c(M=signif(mean(x),3)
+                        , SD= sd(x) ))
 
 
 DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 

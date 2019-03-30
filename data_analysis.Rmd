@@ -1,0 +1,410 @@
+---
+title: 'Data analysis: novelty distraction in eye-movements during reading'
+author: "Martin R. Vasilev"
+date: "11 März 2019"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# check if required packages are installed:
+packages= c("mgcv", "lme4", "reshape", "ggplot2", "knitr", "lattice")
+
+for(i in 1:length(packages)){
+  if(packages[i] %in% rownames(installed.packages())==FALSE){
+    install.packages(packages[i])
+  }
+}
+
+```
+
+## Experiment:
+
+Vasilev et al. (2019) found that a 50-ms deviant sound (a burst of white noise) presented at the onset of fixation on a target word led to significantly longer fixation durations compared to a 50-ms standard sound (a sine wave). The results suggested that increase in fixation durations was not due to an interference with the lexical processing of the target word, but likely due to inhibition of the programming of the next saccade.
+
+The present experiment had a 2 x 2 design with **sound** (standard vs novel) and **sound onset delay** (0 vs 120 ms) as within-subject factors. Participants were 64 undergraduate students. Both the standard and the novel sounds were 120 ms long. Because the average fixation duration during reading is around 240 ms (Reichle et al., 2013), this essentially means that the sound was playing, on average, either during the first half or the second half of the fixation. 
+
+We predicted that, if the increase in fixation durations is indeed due to inhibition of saccade programming, the novel sound should be more distracting when it is played during the second half of fixation. This was because it will be temporally closer to when readers plan and execute their saccade. Additionally, if novel sounds lead to a general motor inhibition (Wessel & Aron, 2013; Wessel, 2017), we would also expect that the next saccade would also be affected, particularly in the 120 ms delay condition. This is because the neural inhibition should slow down the execution of the saccade (e.g., its velocity).
+
+```{r, echo= FALSE}
+
+# Question accuracy:
+load("Data/quest.Rda")
+
+library(reshape)
+DesQuest<- melt(q, id=c('sub', 'item', 'cond'), 
+              measure=c("accuracy"), na.rm=TRUE)
+mQuest<- cast(DesQuest, sub ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+
+
+DesQuest2<- melt(q, id=c('sub', 'item', 'cond'), 
+              measure=c("accuracy"), na.rm=TRUE)
+mQuest2<- cast(DesQuest2, cond ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+
+suppressMessages(library(lme4))
+
+q$cond<- as.factor(q$cond)
+#contrasts(q$cond)
+
+
+if(!file.exists("Models/GLM1.Rda")){
+  GLM1<- glmer(accuracy ~ cond + (cond|sub)+ (1|item), family= binomial, data= q)
+  save(GLM1, file= "Models/GLM1.Rda")
+} else{
+  load("Models/GLM1.Rda")
+}
+
+SGM1<- coef(summary(GLM1))
+```
+
+All participants had comprehension accuracy greater than `r min(mQuest$accuracy_M)*100` %, thus indicating that they understood the sentences. The mean comprehension accuracy was `r mQuest2$accuracy_M[1]*100` % in the standard (SD= `r round(mQuest2$accuracy_SD[1]*100, 2)` %) and `r mQuest2$accuracy_M[2]*100` % in the novel sound condition (SD= `r round(mQuest2$accuracy_SD[2]*100,2)` %). There was no difference in the comprehension measure (z= `r round(SGM1[2,3], 3)`).
+
+
+```{r, echo=FALSE, fig.height= 4.5, fig.width= 4.5}
+
+load("data/sound_check.Rda")
+library(reshape)
+
+DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+              measure=c("N1"), na.rm=TRUE)
+mFix<- cast(DesFix, sound_type+del ~ variable
+            ,function(x) c(M=signif(mean(x),3)
+                           , SD= sd(x) ))
+
+colnames(mFix)<- c("Sound", "Delay", "Mean", "SD")
+mFix$SE<- mFix$SD/sqrt(64)
+mFix$Delay<- as.factor(mFix$Delay)
+mFix$Sound<- as.factor(mFix$Sound)
+levels(mFix$Sound)<- c("Novel", "Standard")
+
+suppressWarnings(suppressMessages(library(ggplot2)))
+
+Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= Sound,
+                        ymin= Mean- SE, ymax= Mean+SE)) +
+  theme_bw(16) +geom_point(size=5)+ geom_line(size=2)+ 
+  scale_colour_brewer(palette="Accent")+ xlab("Onset delay (in ms)")+
+  ylab("Fixation duration (in ms)")+ geom_ribbon(alpha=0.07, colour=NA)+
+  theme(legend.position="bottom", legend.key.width=unit(1.5,"cm")); Plot
+
+
+```
+
+
+*Figure 1*. Duration of the first fixation during which the sound is first played. Shading indicates ± 1 standard error.
+
+
+
+```{r, echo= FALSE}
+library(knitr)
+
+mFix<- mFix[order(mFix$Delay),]
+
+mFix[,4:5]<- round(mFix[,4:5],1)
+
+```
+*Table 1*. Descriptive statistics of the first fixation during which the sound is played (same data as Fig. 1)
+
+`r kable(mFix)`
+
+
+```{r, echo= FALSE}
+sound_check$sound_type<- as.factor(sound_check$sound_type)
+contrasts(sound_check$sound_type)<- c(1, 0)
+
+
+sound_check$del<- as.factor(sound_check$del)
+#contrasts(sound_check$del)
+
+if(!file.exists("Models/LM1.Rda")){
+  LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                  data= sound_check)
+  save(LM1, file= "Models/LM1.Rda")
+}else{
+  load("Models/LM1.Rda")
+}
+
+SM1<- round(coef(summary(LM1)),3)
+
+rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+
+
+```
+
+&nbsp;
+
+Table 2.*LMM Results of the First Fixation Duration during which the Sound is Played*
+
+`r kable(SM1)`
+
+*Note*: t-values greater than 1.96 indicate a significant result.
+
+Consistent with Vasilev et al., the results showed a main effect of sound, thus indicating that novel sounds led to longer fixation durations compared to the standard sound. However, the interaction between delay and sound was also significant, which was due to novel sound being more distracting when they were presented with 120 ms compared to 0 ms delay.
+
+## Survival-curve analysis
+
+Similar to Vasilev et al., divergence-point analysis (Reingold & Sheridan, 2018) was done to locate the earliest point in time when the novel sounds begin to significantly affect fixation durations compared to the standard sound. Because the analysis can compare only two conditions, it was not possible to enter an interaction term. Therefore, separate analyses for 0 and 120 ms delay conditions are reported. In the 0 ms delay condition, the two sound distribuitions diverged significantly at 149 ms [95% CI: 121, 188]. In the 120 ms delay condition, the distributions began to diverge at 180 ms [95% CI: 141, 199]
+
+
+```{r, echo= FALSE, fig.width= 9, fig.height= 6}
+
+# 0 ms delay:
+
+DPA0 <- read.delim("DPA/DPA_0ms.txt")
+DPA0$condition<- as.factor(DPA0$condition)
+levels(DPA0$condition)<- c("Standard", "Novel")
+colnames(DPA0)<- c("sub", "FFD", "sound")
+
+a<- ecdf(DPA0$FFD[DPA0$sound=="Standard"])
+d<- sort(unique(DPA0$FFD))
+dp<- NULL
+
+b<- ecdf(DPA0$FFD[DPA0$sound=="Novel"])
+d2<- sort(unique(DPA0$FFD))
+dp2<- NULL
+
+for(i in 1:length(d)){
+  dp[i]<- (1- a(d[i]))*100 
+}
+
+for(i in 1:length(d2)){
+  dp2[i]<- (1- b(d2[i]))*100
+}
+
+df1<- data.frame(d, dp)
+df2<- data.frame(d2, dp2)
+
+colnames(df2)<- c("d", "dp")
+df1$sound<- "Standard"
+df2$sound<- "Novel"
+
+df<- rbind(df1, df2)
+
+P1<- ggplot(data=df, aes(x= d, y=dp, group= sound, linetype= sound, color= sound)) +
+     theme_bw(16)+ xlab("First fixation duration") + ylab("Survival (%)")+
+     ggtitle("0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 149, color= "gray")+ 
+     geom_vline(xintercept = 121, linetype= "dashed", color= "gray") + geom_vline(xintercept = 188, linetype= "dashed", 
+     color= "gray") + geom_line()+ scale_x_continuous(breaks= seq(100,1000,100))+
+     scale_colour_brewer(palette="Dark2"); P1
+
+#####
+# 120 ms
+
+DPA120 <- read.delim("DPA/DPA_120ms.txt")
+DPA120$condition<- as.factor(DPA120$condition)
+levels(DPA120$condition)<- c("Standard", "Novel")
+colnames(DPA120)<- c("sub", "FFD", "sound")
+
+a<- ecdf(DPA120$FFD[DPA120$sound=="Standard"])
+d<- sort(unique(DPA120$FFD))
+dp<- NULL
+
+b<- ecdf(DPA120$FFD[DPA120$sound=="Novel"])
+d2<- sort(unique(DPA120$FFD))
+dp2<- NULL
+
+for(i in 1:length(d)){
+  dp[i]<- (1- a(d[i]))*100 
+}
+
+for(i in 1:length(d2)){
+  dp2[i]<- (1- b(d2[i]))*100
+}
+
+df1<- data.frame(d, dp)
+df2<- data.frame(d2, dp2)
+
+colnames(df2)<- c("d", "dp")
+df1$sound<- "Standard"
+df2$sound<- "Novel"
+
+df<- rbind(df1, df2)
+
+P2<- ggplot(data=df, aes(x= d, y=dp, group= sound, linetype= sound, color= sound)) +
+     theme_bw(16)+ xlab("First fixation duration") + ylab("Survival (%)")+
+     ggtitle("120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 180, color= "gray")+ 
+     geom_vline(xintercept = 141, linetype= "dashed", color= "gray") + geom_vline(xintercept = 199, linetype= "dashed", 
+     color= "gray") + geom_line()+ scale_x_continuous(breaks= seq(100,1000,100))+
+     scale_colour_brewer(palette="Dark2"); P2
+
+
+# 118-199 ms (120 ms)
+```
+
+
+## Effect of novel sounds on the next saccade:
+
+```{r, echo=FALSE}
+
+sound_check2<- sound_check[-which(sound_check$sacc_peak> 20000), ]
+
+DesSacc<- melt(sound_check2, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+              measure=c("sacc_dur", "sacc_peak", 'sacc_vel', 'next_sacc'), na.rm=TRUE)
+mSacc<- cast(DesSacc, sound_type+del ~ variable
+            ,function(x) c(M=signif(mean(x),3)
+                           , SD= sd(x) ))
+
+mSacc[, 3:10]<- round(mSacc[, 3:10], 2)
+
+
+sacc<- mSacc[, 1:2]
+sacc<- cbind(sacc, paste(mSacc$sacc_dur_M, " (", mSacc$sacc_dur_SD, ")", sep =''))
+sacc<- cbind(sacc, paste(mSacc$sacc_peak_M, " (", mSacc$sacc_peak_SD, ")", sep =''))
+sacc<- cbind(sacc, paste(mSacc$sacc_vel_M, " (", mSacc$sacc_vel_SD, ")", sep =''))
+sacc<- cbind(sacc, paste(mSacc$next_sacc_M, " (", mSacc$next_sacc_SD, ")", sep =''))
+
+colnames(sacc)<- c("Sound", "Delay", "Saccade duration", "Peak saccade velocity", "Avg. saccade velocity", "Saccade length")
+
+sacc$Sound<- as.factor(sacc$Sound)
+levels(sacc$Sound)<- c("Novel", "Standard")
+#sacc$Sound<- factor(sacc$Sound, levels= c("Novel", "Standard"))
+sacc$Delay<- as.factor(sacc$Delay)
+
+sacc<- sacc[c(1,3,2,4),]
+
+## LMMs:
+
+#contrasts(sound_check2$sound_type)
+#contrasts(sound_check2$del)
+
+# saccade duration:
+
+if(!file.exists("Models/LM2.Rda")){
+  LM2<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type+del|sub)+ (sound_type|item),
+                    data= sound_check2)
+  save(LM2, file= "Models/LM2.Rda")
+}else{
+  load("Models/LM2.Rda")
+}
+
+SLM2<- round(coef(summary(LM2)), 3)
+
+
+# saccade peak velocity:
+if(!file.exists("Models/LM3.Rda")){
+  LM3<- lmer(sacc_peak ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                    data= sound_check2)
+  save(LM3, file= "Models/LM3.Rda")
+}else{
+  load("Models/LM3.Rda")
+}
+
+SLM3<- round(coef(summary(LM3)), 3)
+
+
+# average saccade velocity:
+if(!file.exists("Models/LM4.Rda")){
+  LM4<- lmer(sacc_vel ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                    data= sound_check2)
+  save(LM4, file= "Models/LM4.Rda")
+}else{
+  load("Models/LM4.Rda")
+}
+
+SLM4<- round(coef(summary(LM4)), 3)
+
+# saccade amplitude:
+if(!file.exists("Models/LM5.Rda")){
+  LM5<- lmer(next_sacc ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+                    data= sound_check2)
+  save(LM5, file= "Models/LM5.Rda")
+}else{
+  load("Models/LM5.Rda")
+}
+
+SLM5<- round(coef(summary(LM5)), 3)
+
+```
+
+The descriptive statistics are presented in Table 3 below. There were no significant differences in any of the measures (all |*t*|s ${\leq }$ `r max(abs(c(SLM2[2:4, 3], SLM3[2:4, 3], SLM4[2:4, 3], SLM5[2:4, 3])))`), thus suggesting that the novel sounds had no influence on the next saccade immediately after the sound was presented.
+
+Table 3. *Mean Descriptive Statistics for the Next Saccade after Playing the Sound (SDs in Parentheses)*
+
+`r kable(sacc)`
+*Note*: Velocity is measured in degrees of visual angle per second. Saccade length is measured in letters.
+
+
+## Habituation to novelty distraction (effect of trial order)
+
+*Disclaimer*: I'm still learning to do this type of analysis, so there might be some changes after I read more about this. However, the main conclusion doesn't seem to change regardless of the settings I use.
+
+One interesting question (which I had since the previous study) is how much participants are able to habituate to novelty distraction? In other words, is the effect decreasing with trial order because the appearance of novel sounds becomes more predictable? Generalised Additive Mixed Models (GAMMs) were used to test whether the effect is modulated by trial order. GAMMs are especially well suited for this because they can handle well temporally correlated (time-series) data, particularly if it exibits an non-linear relationship. This is similar to generalised linear models, but a smoothing spline functions are fitted for the trial order predicitor.
+
+The (preliminary) results showed that fixation durations in both the novel and standard sound conditions decreased with increasing trial order (i.e., as participants read more sentences).
+
+
+```{r, echo= FALSE}
+# GAMM:
+
+suppressWarnings(suppressMessages(library(mgcv)))
+
+sound_check$Int<- interaction(sound_check$sound_type, sound_check$del)
+
+gam1 <- bam(log(N1) ~ sound_type+
+#s(sub, bs="re") +
+#s(sub, sound_type, bs="re") +
+#s(sub, del, bs="re") +
+s(order, by= sound_type),
+data=sound_check, method="fREML", discrete=TRUE)
+
+summary(gam1)
+
+suppressWarnings(suppressMessages(library(itsadug)))
+
+# suppressMessages(plot_smooth(gam1, view= "order", rug=F, plot_all = "sound_type", rm.ranef= F, ylab= "log(First fixation duration)", 
+#             xlab= "Trial order", family= "serif", print.summary = F))
+
+```
+
+Interestingly, however, the difference in fixation durations between the novel and standard sound conditions did not change with trial order. The realtionship was largely linear with little change of the slope. This is shown below: 
+
+```{r, echo= FALSE}
+suppressMessages(plot_diff(gam1, view = "order", rm.ranef = T, comp = list(sound_type = c("DEV", 
+    "STD")), ylim= c(-0.05, 0.15), col = "darkblue", main= "Novel - Standard difference", ylab= "Estimated log difference (FFD)", xlab= "Trial order", print.summary = F))
+
+
+```
+
+
+An examination of the empirical means also leads to the same conclusion:
+
+```{r, echo=FALSE}
+DesFix3<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del', 'order'), 
+              measure=c("N1"), na.rm=TRUE)
+mFix2<- cast(DesFix3, sound_type+order ~ variable
+            ,function(x) c(M=signif(mean(x),3)
+                           , SD= sd(x) ))
+s1<- subset(mFix2, sound_type== "STD")
+s2<- subset(mFix2, sound_type== "DEV")
+
+mDiff<- data.frame(m= s2$N1_M- s1$N1_M, order= 1:60)
+
+
+library(lattice)
+xyplot(x = m~ order,data = mDiff, xlab= "Trial order", ylab= "Mean difference in ms (Novel - STD)",
+       panel = function(x, y) {
+         panel.xyplot(x, y)
+         panel.abline(0, lty=2)})
+
+```
+
+
+### Conclusions:
+
+- Consistent with our hypothesis, the novel sounds were more distracting when they were played temporally closer to the planning and execution of the next saccade.
+
+- The effects occured temporally quickly, although they are still consistent with results by Wessel & Aron, 2013, as well as results on saccadic inhibition by Reingold & Stampe, Graupner et al. and others. 
+
+- At the same time, there was no influence on the actual execution of the saccade. As saccadic variables such as peak velocity are assumed to be closely correlaled with the firing of neurons, this argues to some extent against the general motor inhibition account. However, it is also possible that the saccades are simply to small (reading saccades are usually ~ 2 degs).
+
+- The effect of the novel sound did not decrease as the experiment progressed. This is interesting as it is often thought that participants should habituate to the distraction with time. Is this specific to using novel sounds (i.e., because they not repeated, so habituation is harder)? Or perhaps our task? Is 60 novels too small a number for habituation to take place? It would be very interesting to perhaps analyse some exisiting datasets (e.g., our old study, cross-modal oddball tasks where we can get the data, etc).
+
+- What is the purpose of this saccadic inhibition? Could be a delay in action plans (saccade to next word) that allows readers time to effectively process the unexpected sound stimuli. A novel sound is arguably an unpredictable event- this may cause readers to delay their plans for a short period of time.
+

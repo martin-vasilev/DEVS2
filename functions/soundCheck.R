@@ -1,7 +1,8 @@
 
 # Martin R. Vasilev, 2017
 
-soundCheck<- function(list_asc = "preproc/files.txt", maxtrial=120, nsounds=5, ppl=14, ResX=1920, soundLatency= 14){
+soundCheck<- function(list_asc = "preproc/files.txt", maxtrial=120, nsounds=5, ppl=14, ResX=1920, soundLatency= 14, 
+                      deg= (1/0.3446)*14){
   
   trial_info<- function(file, maxtrial, data){ # extracts information for processing trials
     ### get trial names:
@@ -359,6 +360,52 @@ soundCheck<- function(list_asc = "preproc/files.txt", maxtrial=120, nsounds=5, p
           temp$blink<- "No"
         }
         
+        
+        ###### Durarion of next saccade after hearing sound:
+        st<- which(grepl(temp$tSFIX, trialF))
+        st<- st[1] # 1st is sfix flag
+        allsac<- which(grepl('ESACC', trialF))
+        allsac<- allsac[allsac>st]
+        nextSaccFlag<- trialF[allsac[1]]
+        temp$sacc_dur<- as.numeric(unlist(unname(strsplit(nextSaccFlag, "\t")))[3])
+        
+        # sacc start flag
+        temp$sacc_Sflag<- get_num(unlist(unname(strsplit(nextSaccFlag, "\t")))[1])
+        
+        ##################
+        # saccade velocity:
+        
+        # extract saccade data:
+        if(!is.na(temp$sacc_Sflag)){
+          sacc_st<- which(grepl(temp$sacc_Sflag, trialF))
+          sacc_st<- sacc_st[1]-2 # -2 so that we can capture one sample before start (avoiding flags)
+          #trialF[sacc_st]
+          
+          sacc_samples<- trialF[sacc_st:allsac[1]]
+          # remove flags from samples data:
+          sacc_samples<- sacc_samples[!grepl("EFIX", sacc_samples)]
+          sacc_samples<- sacc_samples[!grepl("ESACC", sacc_samples)]
+          sacc_samples<- sacc_samples[!grepl("SSACC", sacc_samples)]
+          sacc_samples<- sacc_samples[!grepl("MSG", sacc_samples)]
+          
+          
+          sacc_samples <-  as.data.frame(do.call( rbind, strsplit( sacc_samples, '\t' ) )) # V2 is xpos
+          
+          x= as.numeric(as.character(sacc_samples$V2)) # x pos vector
+          
+          vel <- rep(0, length(x))
+          vel[2:(length(x)-1)] <- abs(1000/2*(x[3:(length(x))] - x[1:(length(x)-2)])/deg)
+          
+          temp$sacc_peak<- max(abs(vel))
+          temp$sacc_vel<- mean(abs(vel))
+          temp$sacc_ampl<- abs((x[length(x)]- x[1])/deg)
+          
+        }else{
+          temp$sacc_peak<- NA
+          temp$sacc_ampl<- NA
+        }
+        
+
         ###########
         prevSound<- temp$tBnd
         
