@@ -119,7 +119,7 @@ if(!file.exists("Models/LM1.Rda")){
 SM1<- round(coef(summary(LM1)),3)
 
 rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SM1, file = "Models/")
+write.csv2(SM1, file = "Models/SM1.csv")
 
 
 
