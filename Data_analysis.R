@@ -3,6 +3,57 @@
 
 rm(list= ls())
 
+#######################################################
+#            Main Data column explanation:            #
+#######################################################
+
+# sub: subject number
+# item: item (sentence) number from the corpus file
+# cond: condition number (2= standard, 3= novel)
+# seq: trial sequence, or the order in which trials were presented in the experiment
+# trialStart: start of trial time stamp in raw asc file
+# trialEnd: end of trial time stamp in raw asc file
+# sound: target word number on which the sound is played
+# sound_type: sound condition (STD= Standard; DEV= Novel sound); NB: DEV is used for historical reasons only (convenience)
+# regionS: start of target word region (empty space before target word), in pixels (x pos)
+# regionE: end of target word region (end of target word), in pixels (x pos)
+# tBnd: timestamp in the raw data showing when the invisible boundary was crossed
+# tSFIX: timestamp corresponding to the start of the next fixation after crossing the boundary
+# tPlaySound: timestamp when the command to play the sound was executed
+# ISI: inter-stimulus interval between playing the current and the previous sound (in ms)
+# nextFlag: what's the next flag in the data file after the sound is played (ESACC= end of saccade; EFIX= end of fixation)
+# delBnd: delay (in ms) between crossin the invisible boundary and playing the sound
+# delFix: delay (in ms) in playing the sound relative to the start of the next fixation
+# del: Experimental delay condition (from experiment design)
+# SOD: stimulus onsed delay of playing the sound relative to start of fixation
+# prevFix: x position of previous fixation before crossing the boundary
+# nextFix: x position of next fixation after crossing the boundary
+# prevGood: used for testing, not sure what it means
+# onTarget: is the fixation after crossing the boundary on the target word?
+# inRegion: is the post-boundary fixation in the target word region?
+# hook: was the boundary "hooked"?- this happens due to drift close to the boundary that triggers it incorrectly
+# blink: what there a blink in the data?
+# N1: duration of next fixation after crossing boundary (i.e., this is when the sound is played)
+# N2: duration of the second fixation after boundary (i.e., fixation after the one when the sound is played)
+# N1len, N2len: most likelyy have to do with saccade stuff, unused
+# sacc_dur: duration of next saccae after sound is played (in ms)
+# sacc Sflag: timestamp of the start of saccade after sound is played
+# sacc_peak: peak saccade velocity for next saccade after sound is played (in deg/s)
+# sacc_vel: average saccade velocity for next saccade after sound is played (in deg/s)
+# sacc_ampl: amplitude of next saccade after playing sound
+# keep: delete
+# order: sound order in experiment
+# word: word number in the sentence
+# Trialt: duration of the trial (in ms); does not include questions, only reading time
+# next_sacc: amplitude of the next saccade in letters
+
+
+
+
+
+# colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
+pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
+
 
 ### Note:
 
@@ -10,7 +61,7 @@ rm(list= ls())
 
 
 # load/ install required packages:
-packages= c("reshape", "lme4", "ggplot2") # list of used packages:
+packages= c("reshape", "lme4", "ggplot2", "mgcv", "itsadug") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -94,6 +145,13 @@ Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= S
 ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 5, height = 5)
 
 
+# sound timing:
+t0<- subset(sound_check, del== 0)
+mean(t0$SOD)
+
+t120<- subset(sound_check, del== 120 & delFix> -50)
+mean(t120$SOD)
+
 ###### LMM analysis:
 
 # Note, for historical reasons (i.e., ease of programming) I'm still using "DEV" to denote the different (deviant) sound.
@@ -122,4 +180,55 @@ rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "So
 write.csv2(SM1, file = "Models/SM1.csv")
 
 
+###########################
+#      GAMM ANALYSIS:     #
+###########################
 
+summary(gam1 <- bam(N1 ~  s(order, bs = "cr", k = 10) +sound_type, data= sound_check))
+plot(gam1)
+
+
+gam1 <- bam(N1 ~ sound_type+
+#              s(order, bs="cr") +
+              s(sub, bs="re") +
+              s(sub, sound_type, bs="re") +
+              s(order, by= sound_type),
+            data=sound_check, method="fREML", discrete=TRUE, k=10)
+
+summary(gam1)
+
+# Calculate empircal means /wrt order:
+DesFix3<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del', 'order'), 
+               measure=c("N1"), na.rm=TRUE)
+mFix2<- cast(DesFix3, sound_type+order ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+s1<- subset(mFix2, sound_type== "STD")
+s2<- subset(mFix2, sound_type== "DEV")
+
+mDiff<- data.frame(m= s2$N1_M- s1$N1_M, order= 1:60)
+
+
+library(lattice)
+xyplot(x = m~ order,data = mDiff, xlab= "Trial order", ylab= "Mean difference in ms (Novel - STD)",
+       panel = function(x, y) {
+         panel.xyplot(x, y)
+         panel.abline(0, lty=2)})
+
+
+
+# make Plot:
+
+pdf(file= "Plots/GAMM_plot.pdf", width = 7, height = 6)
+plot_diff(gam1, view = "order", rm.ranef = F, comp = list(sound_type = c("DEV", 
+          "STD")), ylim= c(-20, 50), col = pallete1[2], main= "Novel - Standard difference",
+          ylab= "Estimated mean difference (FFD)", xlab= "Trial order", print.summary = T, family= "serif",
+          cex.axis= 1.2, cex.lab= 1.4, cex.main= 1.3, lwd= 2, hide.label = T)
+points(x = mDiff$order, y = mDiff$m, pch= 16, col= pallete1[5])
+
+dev.off()
+
+# plot_diff(gam1, view = "order", rm.ranef = T, comp = list(sound_type = c("DEV", 
+#            "STD")), ylim= c(-20, 50), col = "darkblue", main= "Novel - Standard difference",
+#           ylab= "Estimated mean difference (FFD)", xlab= "Trial order", print.summary = T)
+# points(x = mDiff$order, y = mDiff$m, pch= 23, col= "darkorange")
