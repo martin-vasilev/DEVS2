@@ -175,6 +175,39 @@ rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "So
 write.csv2(SM1, file = "Models/SM1_FixDur.csv")
 
 
+# Calculate effect sizes:
+
+# main effect of sound:
+mEffS<- cast(DesFix, sound_type ~ variable
+            ,function(x) c(M=signif(mean(x),3)
+                           , SD= sd(x) ))
+subs<- cast(DesFix, sound_type+sub ~ variable
+                    ,function(x) c(M=signif(mean(x),3)
+                                   , SD= sd(x) ))
+std<- subset(subs, sound_type== "STD")
+dev<- subset(subs, sound_type== "DEV")
+corr_main<- cor(std$N1_M, dev$N1_M) # correlation between means
+
+source("https://raw.githubusercontent.com/martin-vasilev/reading_sounds/master/Functions/effect_sizes.R")
+
+SoundMainES<- Cohens_d(M_C = mEffS$N1_M[mEffS$sound_type=="STD"], M_E = mEffS$N1_M[mEffS$sound_type=="DEV"],
+                       S_C = mEffS$N1_SD[mEffS$sound_type=="STD"], S_E = mEffS$N1_SD[mEffS$sound_type=="DEV"],
+                       N = length(unique(dat$sub)), r = corr_main, design = "within")
+
+# 120 ms delay only:
+Sound120<- Cohens_d(M_C = mFix$Mean[mFix$Sound== "Standard" & mFix$Delay==120], 
+                    M_E = mFix$Mean[mFix$Sound== "Novel" & mFix$Delay==120], 
+                    S_C = mFix$SD[mFix$Sound== "Standard" & mFix$Delay==120], 
+                    S_E = mFix$SD[mFix$Sound== "Novel" & mFix$Delay==120], 
+                    N = length(unique(dat$sub)), r = corr_main, design = "within")
+
+# 0 ms delay only:
+Sound0<- Cohens_d(M_C = mFix$Mean[mFix$Sound== "Standard" & mFix$Delay==0], 
+                    M_E = mFix$Mean[mFix$Sound== "Novel" & mFix$Delay==0], 
+                    S_C = mFix$SD[mFix$Sound== "Standard" & mFix$Delay==0], 
+                    S_E = mFix$SD[mFix$Sound== "Novel" & mFix$Delay==0], 
+                    N = length(unique(dat$sub)), r = corr_main, design = "within")
+
 ###########################
 #      SACCADE DATA:      #
 ###########################
