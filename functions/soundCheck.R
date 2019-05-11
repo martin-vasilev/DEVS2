@@ -2,7 +2,7 @@
 # Martin R. Vasilev, 2017
 
 soundCheck<- function(list_asc = "preproc/files.txt", maxtrial=120, nsounds=5, ppl=14, ResX=1920, soundLatency= 14, 
-                      deg= (1/0.3446)*14){
+                      deg= (1/0.3446)*14, tBlink= 100){
   
   trial_info<- function(file, maxtrial, data){ # extracts information for processing trials
     ### get trial names:
@@ -138,6 +138,7 @@ soundCheck<- function(list_asc = "preproc/files.txt", maxtrial=120, nsounds=5, p
       }
       
       for(k in 1:length(bnds)){
+        
         # generic info about trial:
         temp$sub<- i
         temp$item<- trial_db$item[j]
@@ -409,7 +410,54 @@ soundCheck<- function(list_asc = "preproc/files.txt", maxtrial=120, nsounds=5, p
         ###########
         prevSound<- temp$tBnd
         
+          
+        ### Additional blink detection code (check recorded samples for missing data):
         
+        t1<- temp$tBnd-tBlink # start of time interval to check
+        t1_stamp<- which(grepl(toString(t1), trialF))
+        
+        if(length(t1_stamp)==0){ # not enough data to go that back
+          t1_stamp<- 2 # 1 is SYNCTIME flag, so +1
+        }
+        
+        if(is.na(temp$sacc_Sflag)){
+          t2<- t1 +tBlink*2
+          t2_stamp<- which(grepl(toString(t2), trialF))
+        }else{
+          t2<- temp$sacc_Sflag +tBlink
+          t2_stamp<- which(grepl(toString(t2), trialF))
+        }
+        
+        if(length(t2_stamp)==0){
+          t2_stamp<- length(trialF)-5 # -5 to avoid trial end flags
+        }
+        
+        
+        if(length(t1_stamp:t2_stamp)>0){
+          raw_data<- trialF[t1_stamp:t2_stamp]
+          
+          # remove flags from samples data:
+          raw_data<- raw_data[!grepl("SFIX", raw_data)]
+          raw_data<- raw_data[!grepl("EFIX", raw_data)]
+          raw_data<- raw_data[!grepl("ESACC", raw_data)]
+          raw_data<- raw_data[!grepl("SSACC", raw_data)]
+          raw_data<- raw_data[!grepl("MSG", raw_data)]
+          
+          raw_data <-  as.data.frame(do.call( rbind, strsplit( raw_data, '\t' ) )) 
+          raw_data$V4<- as.numeric(as.character(raw_data$V4))
+          
+          # V4 is pupil size; if it's too small (usually 0), it means blink/ data loss
+          whichBlinks<- which(raw_data$V4<=10)
+          if(length(whichBlinks)>0){
+            temp$blink2<- "Yes"
+          }else{
+            temp$blink2<- "No"
+          }
+        }else{
+          temp$blink2<- NA
+        }
+        
+
         
         # add to dataframe:
         data<- rbind(data, temp)

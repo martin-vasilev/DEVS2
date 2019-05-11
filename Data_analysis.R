@@ -1,63 +1,51 @@
 
 # Martin R. Vasilev, 2019
 
+
 rm(list= ls())
 
+
 #######################################################
-#            Main Data column explanation:            #
+#            Main data column explanation:            #
 #######################################################
 
-# sub: subject number
-# item: item (sentence) number from the corpus file
-# cond: condition number (2= standard, 3= novel)
-# seq: trial sequence, or the order in which trials were presented in the experiment
+# sub:        subject number
+# item:       item (sentence) number from the corpus file
+# cond:       condition number (2= standard, 3= novel)
+# seq:        trial sequence, or the order in which trials were presented in the experiment
 # trialStart: start of trial time stamp in raw asc file
-# trialEnd: end of trial time stamp in raw asc file
-# sound: target word number on which the sound is played
+# trialEnd:   end of trial time stamp in raw asc file
+# sound:      target word number on which the sound is played
 # sound_type: sound condition (STD= Standard; DEV= Novel sound); NB: DEV is used for historical reasons only (convenience)
-# regionS: start of target word region (empty space before target word), in pixels (x pos)
-# regionE: end of target word region (end of target word), in pixels (x pos)
-# tBnd: timestamp in the raw data showing when the invisible boundary was crossed
-# tSFIX: timestamp corresponding to the start of the next fixation after crossing the boundary
+# regionS:    start of target word region (empty space before target word), in pixels (x pos)
+# regionE:    end of target word region (end of target word), in pixels (x pos)
+# tBnd:       timestamp in the raw data showing when the invisible boundary was crossed
+# tSFIX:      timestamp corresponding to the start of the next fixation after crossing the boundary
 # tPlaySound: timestamp when the command to play the sound was executed
-# ISI: inter-stimulus interval between playing the current and the previous sound (in ms)
-# nextFlag: what's the next flag in the data file after the sound is played (ESACC= end of saccade; EFIX= end of fixation)
-# delBnd: delay (in ms) between crossin the invisible boundary and playing the sound
-# delFix: delay (in ms) in playing the sound relative to the start of the next fixation
-# del: Experimental delay condition (from experiment design)
-# SOD: stimulus onsed delay of playing the sound relative to start of fixation
-# prevFix: x position of previous fixation before crossing the boundary
-# nextFix: x position of next fixation after crossing the boundary
-# prevGood: used for testing, not sure what it means
-# onTarget: is the fixation after crossing the boundary on the target word?
-# inRegion: is the post-boundary fixation in the target word region?
-# hook: was the boundary "hooked"?- this happens due to drift close to the boundary that triggers it incorrectly
-# blink: what there a blink in the data?
-# N1: duration of next fixation after crossing boundary (i.e., this is when the sound is played)
-# N2: duration of the second fixation after boundary (i.e., fixation after the one when the sound is played)
-# N1len, N2len: most likelyy have to do with saccade stuff, unused
-# sacc_dur: duration of next saccae after sound is played (in ms)
+# ISI:        inter-stimulus interval between playing the current and the previous sound (in ms)
+# nextFlag:   what's the next flag in the data file after the sound is played (ESACC= end of saccade; EFIX= end of fixation)
+# delBnd:     delay (in ms) between crossing the invisible boundary and playing the sound
+# delFix:     delay (in ms) in playing the sound relative to the start of the next fixation
+# del:        Experimental delay condition (from experiment design)
+# SOD:        stimulus onsed delay of playing the sound relative to start of fixation
+# prevFix:    x position of previous fixation before crossing the boundary
+# nextFix:    x position of next fixation after crossing the boundary
+# N1:         duration of next fixation after crossing boundary (i.e., this is when the sound is played)
+# N2:         duration of the second fixation after boundary (i.e., fixation after the one when the sound is played)
+# sacc_dur:   duration of next saccae after sound is played (in ms)
 # sacc Sflag: timestamp of the start of saccade after sound is played
-# sacc_peak: peak saccade velocity for next saccade after sound is played (in deg/s)
-# sacc_vel: average saccade velocity for next saccade after sound is played (in deg/s)
-# sacc_ampl: amplitude of next saccade after playing sound
-# keep: delete
-# order: sound order in experiment
-# word: word number in the sentence
-# Trialt: duration of the trial (in ms); does not include questions, only reading time
-# next_sacc: amplitude of the next saccade in letters
-
-
+# sacc_peak:  peak saccade velocity for next saccade after sound is played (in deg/s)
+# sacc_vel:   average saccade velocity for next saccade after sound is played (in deg/s)
+# sacc_ampl:  amplitude of next saccade after playing sound
+# order:      sound order in experiment
+# word:       word number in the sentence
+# Trialt:     duration of the trial (in ms); does not include questions, only reading time
+# next_sacc:  amplitude of the next saccade in letters (after playing sound)
 
 
 
 # colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
-
-
-### Note:
-
-# In the data, condition 2 is the standard sound and condition 3 is the novel sound
 
 
 # load/ install required packages:
@@ -98,6 +86,7 @@ DesQuest2<- melt(q, id=c('sub', 'item', 'cond'),
 mQuest2<- cast(DesQuest2, cond ~ variable
                ,function(x) c(M=signif(mean(x),3)
                               , SD= sd(x) ))
+print(mQuest2)
 
 # Convert to percetages:
 mQuest2[,2:3]<- mQuest2[,2:3]*100
@@ -107,6 +96,7 @@ contrasts(q$cond)
 
 
 if(!file.exists("Models/GLM1.Rda")){
+  # doesn't converge with cond for items
   GLM1<- glmer(accuracy ~ cond + (cond|sub)+ (1|item), family= binomial, data= q)
   save(GLM1, file= "Models/GLM1.Rda")
 } else{
@@ -121,16 +111,19 @@ SGM1
 # FIXATION DURATION DATA: #
 ###########################
 
-load("data/sound_check.Rda")
+load("data/dat.Rda")
 
-DesFix<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+DesFix<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
               measure=c("N1"), na.rm=TRUE)
 mFix<- cast(DesFix, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
+print(mFix)
+write.csv2(mFix[c(1,3,2,4), ], file= "Descriptives/FFD.csv")
+
 
 colnames(mFix)<- c("Sound", "Delay", "Mean", "SD")
-mFix$SE<- mFix$SD/sqrt(64)
+mFix$SE<- mFix$SD/sqrt(length(unique(dat$sub)))
 mFix$Delay<- as.factor(mFix$Delay)
 mFix$Sound<- as.factor(mFix$Sound)
 levels(mFix$Sound)<- c("Novel", "Standard")
@@ -146,10 +139,10 @@ ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 5, height = 5)
 
 
 # sound timing:
-t0<- subset(sound_check, del== 0)
+t0<- subset(dat, del== 0)
 mean(t0$SOD)
 
-t120<- subset(sound_check, del== 120 & delFix> -50)
+t120<- subset(dat, del== 120 & delFix> -50)
 mean(t120$SOD)
 
 ###### LMM analysis:
@@ -158,18 +151,20 @@ mean(t120$SOD)
 # However, in this experiment a novel sound was used, so "DEV"= Novel.
 
 # check contrast coding
-sound_check$sound_type<- as.factor(sound_check$sound_type)
-sound_check$sound_type<- factor(sound_check$sound_type, levels= c("STD", "DEV"))
-contrasts(sound_check$sound_type)#<- c(1, 0)
+dat$sound_type<- as.factor(dat$sound_type)
+dat$sound_type<- factor(dat$sound_type, levels= c("STD", "DEV"))
+contrasts(dat$sound_type)#<- c(1, 0)
 
 
-sound_check$del<- as.factor(sound_check$del)
-contrasts(sound_check$del)
+dat$del<- as.factor(dat$del)
+contrasts(dat$del)
 
 if(!file.exists("Models/LM1.Rda")){
-  LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
-            data= sound_check)
+  # doesn't converge with delay slope for items
+  summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type|item),
+            data= dat, REML= TRUE))
   save(LM1, file= "Models/LM1.Rda")
+  
 }else{
   load("Models/LM1.Rda")
 }
@@ -178,6 +173,23 @@ SM1<- round(coef(summary(LM1)),3)
 
 rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
 write.csv2(SM1, file = "Models/SM1.csv")
+
+
+###########################
+#      SACCADE DATA:      #
+###########################
+
+# remove 2 outliers:
+dat<- subset(dat, sacc_vel<1000)
+
+# Descriptives:
+DesSacc<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+              measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'next_sacc'), na.rm=TRUE)
+mSacc<- cast(DesSacc, sound_type+del ~ variable
+            ,function(x) c(M=signif(mean(x),3)
+                           , SD= sd(x) ))
+write.csv2(mSacc[c(1,3,2,4), ], file= "Descriptives/Sacc.csv")
+
 
 
 ###########################
