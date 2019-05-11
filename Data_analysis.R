@@ -49,7 +49,7 @@ pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & 
 
 
 # load/ install required packages:
-packages= c("reshape", "lme4", "ggplot2", "mgcv", "itsadug") # list of used packages:
+packages= c("reshape", "lme4", "ggplot2", "mgcv", "itsadug", "ggpubr") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -284,6 +284,116 @@ if(!file.exists("Models/LM5.Rda")){
 SLM5<- round(coef(summary(LM5)), 3)
 rownames(SLM5)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
 write.csv2(SLM5, file = "Models/SLM5_SaccAmpl.csv")
+
+
+
+###########################
+#     Survival curves:    #
+###########################
+
+# 0 ms delay:
+
+DPA0 <- read.delim("DPA/DPA_0ms.txt")
+DPA0$condition<- as.factor(DPA0$condition)
+levels(DPA0$condition)<- c("Standard", "Novel")
+colnames(DPA0)<- c("sub", "FFD", "Sound")
+
+a<- ecdf(DPA0$FFD[DPA0$Sound=="Standard"])
+d<- sort(unique(DPA0$FFD))
+dp<- NULL
+
+b<- ecdf(DPA0$FFD[DPA0$Sound=="Novel"])
+d2<- sort(unique(DPA0$FFD))
+dp2<- NULL
+
+for(i in 1:length(d)){
+  dp[i]<- (1- a(d[i]))*100 
+}
+
+for(i in 1:length(d2)){
+  dp2[i]<- (1- b(d2[i]))*100
+}
+
+df1<- data.frame(d, dp)
+df2<- data.frame(d2, dp2)
+
+colnames(df2)<- c("d", "dp")
+df1$Sound<- "Standard"
+df2$Sound<- "Novel"
+
+df<- rbind(df1, df2)
+
+P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound))+  
+  coord_cartesian(xlim = c(80, 800))+
+  theme_bw(14)+ xlab("First fixation duration") + ylab("Survival (%)")+
+  ggtitle("0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= pallete1[4])+ 
+  geom_vline(xintercept = 130, linetype= "dashed", color= pallete1[4]) + geom_vline(xintercept = 185, linetype= "dashed", 
+                                                                               color= pallete1[4]) + 
+#  geom_rect(fill= pallete1[5], color="black", alpha=0.005, show.legend = F, inherit.aes = T)+
+  geom_line()+ annotate("text", x = 500, y = 85, label = "Divergence point= 152 ms [95% CI: 130, 152]")+
+  scale_x_continuous(breaks= seq(100,1000,100))+ #xlim(100, 1000)+
+  #scale_colour_brewer(palette="Dark2")  + 
+  scale_color_manual(values=c(pallete1[1], pallete1[2]))+
+  theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
+        panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P1
+
+ggsave(filename = "Plots/Survival0ms.pdf", plot = P1, width = 7, height = 5)
+
+#####
+# 120 ms
+
+DPA120 <- read.delim("DPA/DPA_120ms.txt"); DPA120<- subset(DPA120, duration<800)
+DPA120$condition<- as.factor(DPA120$condition)
+levels(DPA120$condition)<- c("Standard", "Novel")
+colnames(DPA120)<- c("sub", "FFD", "Sound")
+
+a<- ecdf(DPA120$FFD[DPA120$Sound=="Standard"])
+d<- sort(unique(DPA120$FFD))
+dp<- NULL
+
+b<- ecdf(DPA120$FFD[DPA120$Sound=="Novel"])
+d2<- sort(unique(DPA120$FFD))
+dp2<- NULL
+
+for(i in 1:length(d)){
+  dp[i]<- (1- a(d[i]))*100 
+}
+
+for(i in 1:length(d2)){
+  dp2[i]<- (1- b(d2[i]))*100
+}
+
+df1<- data.frame(d, dp)
+df2<- data.frame(d2, dp2)
+
+colnames(df2)<- c("d", "dp")
+df1$Sound<- "Standard"
+df2$Sound<- "Novel"
+
+df<- rbind(df1, df2)
+
+P2<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound)) +
+  coord_cartesian(xlim = c(80, 800))+
+  theme_bw(14)+ xlab("First fixation duration") + ylab("Survival (%)")+
+  ggtitle("120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= pallete1[4])+ 
+  geom_vline(xintercept = 149, linetype= "dashed", color= pallete1[4]) + geom_vline(xintercept = 198, linetype= "dashed", 
+  color= pallete1[4]) + geom_line()+ 
+  annotate("text", x = 500, y = 85, label = "Divergence point= 178 ms [95% CI: 149, 198]")+
+  scale_x_continuous(breaks= seq(100,1000,100))+
+  #scale_colour_brewer(palette="Dark2") + 
+  scale_color_manual(values=c(pallete1[1], pallete1[2]))+
+  theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
+        panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P2
+
+
+ggsave(filename = "Plots/Survival120ms.pdf", plot = P2, width = 7, height = 5)
+
+
+# merge plots:
+
+figure <- ggarrange(P1, P2, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom", align = "h")
+ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
+
 
 
 ###########################
