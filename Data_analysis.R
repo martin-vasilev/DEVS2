@@ -172,7 +172,7 @@ if(!file.exists("Models/LM1.Rda")){
 SM1<- round(coef(summary(LM1)),3)
 
 rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SM1, file = "Models/SM1.csv")
+write.csv2(SM1, file = "Models/SM1_FixDur.csv")
 
 
 ###########################
@@ -190,6 +190,67 @@ mSacc<- cast(DesSacc, sound_type+del ~ variable
                            , SD= sd(x) ))
 write.csv2(mSacc[c(1,3,2,4), ], file= "Descriptives/Sacc.csv")
 
+####
+# LMM analyses:
+
+contrasts(dat$sound_type)
+contrasts(dat$del)
+
+# saccade duration:
+
+if(!file.exists("Models/LM2.Rda")){
+  summary(LM2<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+             data= dat))
+  save(LM2, file= "Models/LM2.Rda")
+}else{
+  load("Models/LM2.Rda")
+}
+
+SLM2<- round(coef(summary(LM2)), 3)
+rownames(SLM2)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM2, file = "Models/SLM2_saccDur.csv")
+
+####
+# saccade peak velocity:
+if(!file.exists("Models/LM3.Rda")){
+  summary(LM3<- lmer(sacc_peak ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+             data= dat))
+  save(LM3, file= "Models/LM3.Rda")
+}else{
+  load("Models/LM3.Rda")
+}
+
+SLM3<- round(coef(summary(LM3)), 3)
+rownames(SLM3)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM3, file = "Models/SLM3_PeakVel.csv")
+
+####
+# average saccade velocity:
+if(!file.exists("Models/LM4.Rda")){
+  summary(LM4<- lmer(sacc_vel ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+             data= dat))
+  save(LM4, file= "Models/LM4.Rda")
+}else{
+  load("Models/LM4.Rda")
+}
+
+SLM4<- round(coef(summary(LM4)), 3)
+rownames(SLM4)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM4, file = "Models/SLM4_AvgVel.csv")
+
+####
+# saccade amplitude:
+if(!file.exists("Models/LM5.Rda")){
+  summary(LM5<- lmer(next_sacc ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+             data= dat))
+  save(LM5, file= "Models/LM5.Rda")
+}else{
+  load("Models/LM5.Rda")
+}
+
+SLM5<- round(coef(summary(LM5)), 3)
+rownames(SLM5)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM5, file = "Models/SLM5_SaccAmpl.csv")
 
 
 ###########################
