@@ -400,21 +400,35 @@ ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
 #      GAMM ANALYSIS:     #
 ###########################
 
-summary(gam1 <- bam(N1 ~  s(order, bs = "cr", k = 10) +sound_type, data= sound_check))
-plot(gam1)
-
-
 gam1 <- bam(N1 ~ sound_type+
-#              s(order, bs="cr") +
-              s(sub, bs="re") +
-              s(sub, sound_type, bs="re") +
-              s(order, by= sound_type),
-            data=sound_check, method="fREML", discrete=TRUE, k=10)
+              s(sub, bs="re", k=10) +
+              s(sub, sound_type, bs="re", k=10) +
+              s(item, bs= "re", k=10)+
+              s(item, sound_type, bs="re") +
+              s(order, bs= "cr", k=10)+
+              s(order, by= sound_type, k=10, bs= "cr")+
+              s(order, sub, bs= "fs", m=1, k=4),
+            data=dat)
 
 summary(gam1)
 
+# remove the modulation of trial order by sound_type
+gam2 <- bam(N1 ~ sound_type+
+              s(sub, bs="re", k=10) +
+              s(sub, sound_type, bs="re", k=10) +
+              s(item, bs= "re", k=10)+
+              s(item, sound_type, bs="re") +
+              s(order, bs= "cr", k=10)+
+#              s(order, by= sound_type, k=10, bs= "cr")+
+              s(order, sub, bs= "fs", m=1, k=4),
+            data=dat)
+
+summary(gam2)
+
+compareML(gam1, gam2, suggest.report = T)
+
 # Calculate empircal means /wrt order:
-DesFix3<- melt(sound_check, id=c('sub', 'item', 'cond', 'sound_type', 'del', 'order'), 
+DesFix3<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del', 'order'), 
                measure=c("N1"), na.rm=TRUE)
 mFix2<- cast(DesFix3, sound_type+order ~ variable
              ,function(x) c(M=signif(mean(x),3)
@@ -425,11 +439,15 @@ s2<- subset(mFix2, sound_type== "DEV")
 mDiff<- data.frame(m= s2$N1_M- s1$N1_M, order= 1:60)
 
 
-library(lattice)
-xyplot(x = m~ order,data = mDiff, xlab= "Trial order", ylab= "Mean difference in ms (Novel - STD)",
-       panel = function(x, y) {
-         panel.xyplot(x, y)
-         panel.abline(0, lty=2)})
+# library(lattice)
+# xyplot(x = m~ order,data = mDiff, xlab= "Trial order", ylab= "Mean difference in ms (Novel - STD)",
+#        panel = function(x, y) {
+#          panel.xyplot(x, y)
+#          panel.abline(0, lty=2)})
+
+
+plot_smooth(gam1, view="order", plot_all="sound_type", rug=F)
+acf_plot(resid(gam1), split_by=list(dat$order))
 
 
 
@@ -438,7 +456,7 @@ xyplot(x = m~ order,data = mDiff, xlab= "Trial order", ylab= "Mean difference in
 pdf(file= "Plots/GAMM_plot.pdf", width = 7, height = 6)
 plot_diff(gam1, view = "order", rm.ranef = F, comp = list(sound_type = c("DEV", 
           "STD")), ylim= c(-20, 50), col = pallete1[2], main= "Novel - Standard difference",
-          ylab= "Estimated mean difference (FFD)", xlab= "Trial order", print.summary = T, family= "serif",
+          ylab= "Mean difference in FFD (in ms)", xlab= "Trial order in experiment", print.summary = T, family= "serif",
           cex.axis= 1.2, cex.lab= 1.4, cex.main= 1.3, lwd= 2, hide.label = T)
 points(x = mDiff$order, y = mDiff$m, pch= 16, col= pallete1[5])
 
