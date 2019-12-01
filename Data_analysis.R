@@ -47,9 +47,10 @@ rm(list= ls())
 # colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
 
+sound_pallete= c('#CC1236','#8BC585')
 
 # load/ install required packages:
-packages= c("reshape", "lme4", "ggplot2", "mgcv", "itsadug", "ggpubr") # list of used packages:
+packages= c("reshape", "lme4", "ggplot2", "mgcv", "itsadug", "ggpubr", "grid") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -130,12 +131,20 @@ levels(mFix$Sound)<- c("Novel", "Standard")
 
 Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= Sound,
                         ymin= Mean- SE, ymax= Mean+SE)) +
-  theme_bw(16) +geom_point(size=5)+ geom_line(size=2)+ 
-  scale_colour_brewer(palette="Accent")+ xlab("Sound onset delay (in ms)")+
+  theme_bw(14) +geom_point(size=4.5)+ geom_line(size=2)+ 
+  #scale_colour_brewer(palette="Accent")+ 
+  scale_color_manual(values=sound_pallete)+
+  coord_cartesian(clip = 'off')+
+  xlab("Sound onset delay (in ms)")+ ylim(220, 290)+
+  scale_shape_manual(values=c(15, 17))+
+  scale_x_discrete(expand = c(0.05,0.05))+
   ylab("First fixation duration (in ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
-  theme(legend.position="bottom", legend.key.width=unit(1.5,"cm")); Plot
+  #annotate("text", x = -2, y = 290, label = "a)             ")+
+  theme(legend.position= c(0.82,0.87), legend.key.width=unit(1.5,"cm"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white")); Plot
 
-ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 5, height = 5)
+ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 7, height = 6)
 
 
 # sound timing:
@@ -173,6 +182,11 @@ SM1<- round(coef(summary(LM1)),3)
 
 rownames(SM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
 write.csv2(SM1, file = "Models/SM1_FixDur.csv")
+
+### simple effects analysis:
+
+library(emmeans)
+emmeans(LM1, pairwise ~ sound_type*del, pbkrtest.limit = 5832)
 
 
 # Calculate effect sizes:
@@ -217,11 +231,46 @@ dat<- subset(dat, sacc_vel<1000)
 
 # Descriptives:
 DesSacc<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
-              measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'next_sacc'), na.rm=TRUE)
+              measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'next_sacc', 'sacc_ampl'), na.rm=TRUE)
 mSacc<- cast(DesSacc, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
 write.csv2(mSacc[c(1,3,2,4), ], file= "Descriptives/Sacc.csv")
+
+##################
+# saccade plot:
+##################
+
+df<- cast(DesSacc, sound_type+del+sub ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+
+df$del<- as.factor(df$del)
+levels(df$del)<- c('0 ms delay', '120 ms delay')
+
+colnames(df)<- c("Sound", "del", "sub", "sacc_dur_M", "sacc_dur_SD", "sacc_peak_M", "sacc_peak_SD",
+                 "sacc_vel_M", "sacc_vel_SD", "next_sacc_M", "next_sacc_SD", "sacc_ampl_M", "sacc_ampl_SD")
+
+df$Sound<- as.factor(df$Sound)
+levels(df$Sound)<- c('Novel', 'Standard')
+
+SP<- ggplot(df, aes(x=sacc_ampl_M, y=sacc_peak_M, color=Sound, shape= Sound))+
+  geom_point(size=2.5, alpha= 0.6) + theme_classic(14)+
+  xlab("Saccade amplitude (deg)")+ 
+  ylab("Peak saccade velocity (deg/s)")+
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE, size= 1.1)+
+  scale_shape_manual(values=c(16, 17))+ 
+  scale_color_manual(values=pallete1[1:2])+
+  theme(legend.position="bottom",
+  strip.background = element_rect(colour="white", fill="white"),
+  strip.text = element_text(size = 14, face= 'bold'),
+  legend.key.size = unit(2, "lines"))+
+  facet_grid(. ~ del);SP
+
+ggsave(filename = 'Plots/main_seq.pdf', plot = SP, width = 8, height = 5)
+
+
+
 
 ####
 # LMM analyses:
@@ -322,18 +371,21 @@ df1$Sound<- "Standard"
 df2$Sound<- "Novel"
 
 df<- rbind(df1, df2)
+df$Sound<- as.factor(df$Sound)
+df$Sound<- factor(df$Sound, levels= c('Standard', "Novel"))
+levels(df$Sound)
 
 P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound))+  
   coord_cartesian(xlim = c(80, 800))+
   theme_bw(14)+ xlab("First fixation duration") + ylab("Survival (%)")+
-  ggtitle("0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= pallete1[4])+ 
-  geom_vline(xintercept = 130, linetype= "dashed", color= pallete1[4]) + geom_vline(xintercept = 185, linetype= "dashed", 
-                                                                               color= pallete1[4]) + 
+  ggtitle("0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= "#8f8f8f")+ 
+  geom_vline(xintercept = 130, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 185, linetype= "dashed", 
+                                                                               color= "#8f8f8f") + 
 #  geom_rect(fill= pallete1[5], color="black", alpha=0.005, show.legend = F, inherit.aes = T)+
   geom_line()+ annotate("text", x = 500, y = 85, label = "Divergence point= 152 ms [95% CI: 130, 152]")+
   scale_x_continuous(breaks= seq(100,1000,100))+ #xlim(100, 1000)+
   #scale_colour_brewer(palette="Dark2")  + 
-  scale_color_manual(values=c(pallete1[1], pallete1[2]))+
+  scale_color_manual(values=c(sound_pallete[2], sound_pallete[1]))+
   theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
         panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P1
 
@@ -371,17 +423,20 @@ df1$Sound<- "Standard"
 df2$Sound<- "Novel"
 
 df<- rbind(df1, df2)
+df$Sound<- as.factor(df$Sound)
+df$Sound<- factor(df$Sound, levels= c('Standard', "Novel"))
+levels(df$Sound)
 
 P2<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound)) +
   coord_cartesian(xlim = c(80, 800))+
   theme_bw(14)+ xlab("First fixation duration") + ylab("Survival (%)")+
-  ggtitle("120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= pallete1[4])+ 
-  geom_vline(xintercept = 149, linetype= "dashed", color= pallete1[4]) + geom_vline(xintercept = 198, linetype= "dashed", 
-  color= pallete1[4]) + geom_line()+ 
+  ggtitle("120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
+  geom_vline(xintercept = 149, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 198, linetype= "dashed", 
+  color= "#8f8f8f") + geom_line()+ 
   annotate("text", x = 500, y = 85, label = "Divergence point= 178 ms [95% CI: 149, 198]")+
   scale_x_continuous(breaks= seq(100,1000,100))+
   #scale_colour_brewer(palette="Dark2") + 
-  scale_color_manual(values=c(pallete1[1], pallete1[2]))+
+  scale_color_manual(values=c(sound_pallete[2], sound_pallete[1]))+
   theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
         panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P2
 
@@ -453,14 +508,24 @@ acf_plot(resid(gam1), split_by=list(dat$order))
 
 # make Plot:
 
+#vp.BottomRight <- viewport(height=unit(.5, "npc"), width=unit(0.5, "npc"), 
+                           just=c("left","top"), 
+                           y=0.5, x=0.5)
+
+#par(mfrow=c(2,1))
+
 pdf(file= "Plots/GAMM_plot.pdf", width = 7, height = 6)
 plot_diff(gam1, view = "order", rm.ranef = F, comp = list(sound_type = c("DEV", 
           "STD")), ylim= c(-20, 50), col = pallete1[2], main= "Novel - Standard difference",
           ylab= "Mean difference in FFD (in ms)", xlab= "Trial order in experiment", print.summary = T, family= "serif",
           cex.axis= 1.2, cex.lab= 1.4, cex.main= 1.3, lwd= 2, hide.label = T)
-points(x = mDiff$order, y = mDiff$m, pch= 16, col= pallete1[5])
-
+points(x = mDiff$order, y = mDiff$m, pch= 18, col= pallete1[5])
 dev.off()
+
+
+#print(vp=vp.BottomRight, Plot)
+
+
 
 # plot_diff(gam1, view = "order", rm.ranef = T, comp = list(sound_type = c("DEV", 
 #            "STD")), ylim= c(-20, 50), col = "darkblue", main= "Novel - Standard difference",
