@@ -50,7 +50,7 @@ pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & 
 sound_pallete= c('#CC1236','#8BC585')
 
 # load/ install required packages:
-packages= c("reshape", "lme4", "ggplot2", "mgcv", "itsadug", "ggpubr", "grid") # list of used packages:
+packages= c("reshape", "lme4", 'car', "ggplot2", "mgcv", "itsadug", "ggpubr", "grid") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -131,11 +131,11 @@ levels(mFix$Sound)<- c("Novel", "Standard")
 
 Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= Sound,
                         ymin= Mean- SE, ymax= Mean+SE)) +
-  theme_bw(14) +geom_point(size=4.5)+ geom_line(size=2)+ 
+  theme_classic(14) +geom_point(size=4.5)+ geom_line(size=2)+ 
   #scale_colour_brewer(palette="Accent")+ 
   scale_color_manual(values=sound_pallete)+
   coord_cartesian(clip = 'off')+
-  xlab("Sound onset delay (in ms)")+ ylim(220, 290)+
+  xlab("Sound onset delay (in ms)")+ #ylim(220, 280)+
   scale_shape_manual(values=c(15, 17))+
   scale_x_discrete(expand = c(0.05,0.05))+
   ylab("First fixation duration (in ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
@@ -186,7 +186,7 @@ write.csv2(SM1, file = "Models/SM1_FixDur.csv")
 ### simple effects analysis:
 
 library(emmeans)
-emmeans(LM1, pairwise ~ sound_type*del, pbkrtest.limit = 5832)
+#EM<- emmeans(LM1, pairwise ~ sound_type*del, pbkrtest.limit = 5832)
 
 
 # Calculate effect sizes:
@@ -226,12 +226,9 @@ Sound0<- Cohens_d(M_C = mFix$Mean[mFix$Sound== "Standard" & mFix$Delay==0],
 #      SACCADE DATA:      #
 ###########################
 
-# remove 2 outliers:
-dat<- subset(dat, sacc_vel<1000)
-
 # Descriptives:
 DesSacc<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
-              measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'next_sacc', 'sacc_ampl'), na.rm=TRUE)
+              measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'sacc_ampl'), na.rm=TRUE)
 mSacc<- cast(DesSacc, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
@@ -249,7 +246,7 @@ df$del<- as.factor(df$del)
 levels(df$del)<- c('0 ms delay', '120 ms delay')
 
 colnames(df)<- c("Sound", "del", "sub", "sacc_dur_M", "sacc_dur_SD", "sacc_peak_M", "sacc_peak_SD",
-                 "sacc_vel_M", "sacc_vel_SD", "next_sacc_M", "next_sacc_SD", "sacc_ampl_M", "sacc_ampl_SD")
+                 "sacc_vel_M", "sacc_vel_SD", "sacc_ampl_M", "sacc_ampl_SD")
 
 df$Sound<- as.factor(df$Sound)
 levels(df$Sound)<- c('Novel', 'Standard')
@@ -270,7 +267,48 @@ SP<- ggplot(df, aes(x=sacc_ampl_M, y=sacc_peak_M, color=Sound, shape= Sound))+
 ggsave(filename = 'Plots/main_seq.pdf', plot = SP, width = 8, height = 5)
 
 
+##### Saccade duration:
 
+df2<- mSacc[,c('sound_type', 'del', 'sacc_dur_M', 'sacc_dur_SD')]
+colnames(df2)<- c("Sound","Delay", "Mean",  "SD")
+
+df2$SE<- df2$SD/sqrt(length(unique(dat$sub)))
+df2$Delay<- as.factor(df2$Delay)
+df2$Sound<- as.factor(df2$Sound)
+levels(df2$Sound)<- c("Novel", "Standard")
+
+
+
+Plot2 <-ggplot(df2, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= Sound,
+                        ymin= Mean- SE, ymax= Mean+SE)) +
+  theme_classic(14) +geom_point(size=4.5)+ geom_line(size=2)+ 
+  #scale_colour_brewer(palette="Accent")+ 
+  scale_color_manual(values=sound_pallete)+
+  coord_cartesian(clip = 'off')+
+  xlab("Sound onset delay (in ms)")+ #ylim(220, 280)+
+  scale_shape_manual(values=c(15, 17))+
+  scale_x_discrete(expand = c(0.05,0.05))+
+  ylab("First fixation duration (in ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
+  #annotate("text", x = -2, y = 290, label = "a)             ")+
+  theme(legend.position= c(0.82,0.87), legend.key.width=unit(1.5,"cm"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white")); Plot2
+
+ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 7, height = 6)
+
+
+
+
+
+
+# merge descriptive plots: 
+library(ggpubr)
+
+figure1 <- ggarrange(Plot, Plot, ncol = 2, nrow = 1, common.legend = TRUE, legend = "top")
+figure2 <- ggarrange(figure1, SP, ncol = 1, nrow = 2, common.legend = TRUE, legend = "top")
+
+
+ggsave(filename = 'Plots/Des_merged.pdf', plot = figure2, width = 8, height = 10)
 
 ####
 # LMM analyses:
@@ -281,7 +319,7 @@ contrasts(dat$del)
 # saccade duration:
 
 if(!file.exists("Models/LM2.Rda")){
-  summary(LM2<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+  summary(LM2<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (1|item),
              data= dat))
   save(LM2, file= "Models/LM2.Rda")
 }else{
@@ -295,7 +333,7 @@ write.csv2(SLM2, file = "Models/SLM2_saccDur.csv")
 ####
 # saccade peak velocity:
 if(!file.exists("Models/LM3.Rda")){
-  summary(LM3<- lmer(sacc_peak ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+  summary(LM3<- lmer(sacc_peak ~ sound_type*del + (1|sub)+ (1|item),
              data= dat))
   save(LM3, file= "Models/LM3.Rda")
 }else{
@@ -309,7 +347,7 @@ write.csv2(SLM3, file = "Models/SLM3_PeakVel.csv")
 ####
 # average saccade velocity:
 if(!file.exists("Models/LM4.Rda")){
-  summary(LM4<- lmer(sacc_vel ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+  summary(LM4<- lmer(sacc_vel ~ sound_type*del + (1|sub)+ (1|item),
              data= dat))
   save(LM4, file= "Models/LM4.Rda")
 }else{
@@ -323,7 +361,7 @@ write.csv2(SLM4, file = "Models/SLM4_AvgVel.csv")
 ####
 # saccade amplitude:
 if(!file.exists("Models/LM5.Rda")){
-  summary(LM5<- lmer(next_sacc ~ sound_type*del + (sound_type+del|sub)+ (sound_type+del|item),
+  summary(LM5<- lmer(sacc_ampl ~ sound_type*del + (del|sub)+ (1|item),
              data= dat))
   save(LM5, file= "Models/LM5.Rda")
 }else{
@@ -509,8 +547,8 @@ acf_plot(resid(gam1), split_by=list(dat$order))
 # make Plot:
 
 #vp.BottomRight <- viewport(height=unit(.5, "npc"), width=unit(0.5, "npc"), 
-                           just=c("left","top"), 
-                           y=0.5, x=0.5)
+#                           just=c("left","top"), 
+#                           y=0.5, x=0.5)
 
 #par(mfrow=c(2,1))
 

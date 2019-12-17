@@ -91,16 +91,26 @@ outTab<- sound_check[outliers,]
 sound_check<- sound_check[-outliers,]
 noutliers<- nrow(outTab)
 
+# saccade outliers:
+outPeak<- which(sound_check$sacc_peak>1000)
+sound_check<- sound_check[-outPeak,]
+
+outAmpl<- which(sound_check$sacc_ampl>15)
+sound_check<- sound_check[-outAmpl,]
+
+
 cat(sprintf("%f percent of data excluded due to blinks", (nblinks/nobs)*100))
 cat(sprintf("%f percent of data excluded due to in-fixations", (infixn/nobs)*100))
 cat(sprintf("%f percent of data excluded due to hooks", abs(nhook)))
 cat(sprintf("%f percent of data excluded as outliers (<80; > 1000ms)",  (noutliers/nobs)*100))
+cat(sprintf("%f percent of data excluded as outliers (> 1000 deg/s peak saccade)",  (length(outPeak)/nobs)*100))
+cat(sprintf("%f percent of data excluded as outliers (> 15 deg saccade)",  (length(outAmpl)/nobs)*100))
 cat(sprintf("%f percent of data remains for analysis", (nrow(sound_check)/nobs)*100))
 
 
 #sound_check<- subset(sound_check, delFix<80)
 
-sound_check$next_sacc<- abs(sound_check$N1x- sound_check$N2x)/14
+sound_check$next_sacc<- abs(sound_check$nextFix- sound_check$N1x)/14
 
 dat<- sound_check
 
