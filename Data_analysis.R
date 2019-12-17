@@ -47,8 +47,6 @@ rm(list= ls())
 # colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
 
-sound_pallete= c('#CC1236','#8BC585')
-
 # load/ install required packages:
 packages= c("reshape", "lme4", 'car', "ggplot2", "mgcv", "itsadug", "ggpubr", "grid") # list of used packages:
 
