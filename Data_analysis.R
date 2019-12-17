@@ -129,22 +129,23 @@ mFix$Delay<- as.factor(mFix$Delay)
 mFix$Sound<- as.factor(mFix$Sound)
 levels(mFix$Sound)<- c("Novel", "Standard")
 
-Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= Sound,
+Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, fill=Sound, colour= Sound, shape= Sound,
                         ymin= Mean- SE, ymax= Mean+SE)) +
-  theme_classic(14) +geom_point(size=4.5)+ geom_line(size=2)+ 
+  theme_classic(18) +geom_point(size=4.5)+ geom_line(size=2)+ 
   #scale_colour_brewer(palette="Accent")+ 
-  scale_color_manual(values=sound_pallete)+
+  scale_color_manual(values=pallete1[1:2])+
+  scale_fill_manual(values=pallete1[1:2])+
   coord_cartesian(clip = 'off')+
-  xlab("Sound onset delay (in ms)")+ #ylim(220, 280)+
-  scale_shape_manual(values=c(15, 17))+
-  scale_x_discrete(expand = c(0.05,0.05))+
-  ylab("First fixation duration (in ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
+  xlab("Sound onset delay (ms)")+ ylim(220, 280)+
+  scale_shape_manual(values=c(16, 17))+
+  scale_x_discrete(expand = c(0.1,0.1))+
+  ylab("First fixation duration (ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
   #annotate("text", x = -2, y = 290, label = "a)             ")+
-  theme(legend.position= c(0.82,0.87), legend.key.width=unit(1.5,"cm"),
+  theme(legend.position= c(0.285,0.87), legend.key.width=unit(1.5,"cm"),
         panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), 
         panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white")); Plot
 
-ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 7, height = 6)
+ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 6, height = 6)
 
 
 # sound timing:
@@ -251,11 +252,13 @@ colnames(df)<- c("Sound", "del", "sub", "sacc_dur_M", "sacc_dur_SD", "sacc_peak_
 df$Sound<- as.factor(df$Sound)
 levels(df$Sound)<- c('Novel', 'Standard')
 
+# Peak velocity vs amplitude:
 SP<- ggplot(df, aes(x=sacc_ampl_M, y=sacc_peak_M, color=Sound, shape= Sound))+
-  geom_point(size=2.5, alpha= 0.6) + theme_classic(14)+
+  geom_point(size=2.5, alpha= 0.65) + theme_classic(14)+
   xlab("Saccade amplitude (deg)")+ 
   ylab("Peak saccade velocity (deg/s)")+
-  geom_smooth(method=lm, se=FALSE, fullrange=TRUE, size= 1.1)+
+  ggtitle('a)')+
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE, size= 1)+
   scale_shape_manual(values=c(16, 17))+ 
   scale_color_manual(values=pallete1[1:2])+
   theme(legend.position="bottom",
@@ -264,51 +267,32 @@ SP<- ggplot(df, aes(x=sacc_ampl_M, y=sacc_peak_M, color=Sound, shape= Sound))+
   legend.key.size = unit(2, "lines"))+
   facet_grid(. ~ del);SP
 
-ggsave(filename = 'Plots/main_seq.pdf', plot = SP, width = 8, height = 5)
+ggsave(filename = 'Plots/main_seq_peak.pdf', plot = SP, width = 8, height = 5)
 
 
-##### Saccade duration:
+# Saccade duration vs amplitude:
+SP2<- ggplot(df, aes(x=sacc_ampl_M, y=sacc_dur_M, color=Sound, shape= Sound))+
+  geom_point(size=2.5, alpha= 0.65) + theme_classic(14)+
+  xlab("Saccade amplitude (deg)")+ 
+  ylab("Saccade duration (ms)")+
+  ggtitle('b)')+
+  geom_smooth(method=lm, se=FALSE, fullrange=TRUE, size= 1)+
+  scale_shape_manual(values=c(16, 17))+ 
+  scale_color_manual(values=pallete1[1:2])+
+  theme(legend.position="bottom",
+        strip.background = element_rect(colour="white", fill="white"),
+        strip.text = element_text(size = 14, face= 'bold'),
+        legend.key.size = unit(2, "lines"))+
+  facet_grid(. ~ del);SP2
 
-df2<- mSacc[,c('sound_type', 'del', 'sacc_dur_M', 'sacc_dur_SD')]
-colnames(df2)<- c("Sound","Delay", "Mean",  "SD")
-
-df2$SE<- df2$SD/sqrt(length(unique(dat$sub)))
-df2$Delay<- as.factor(df2$Delay)
-df2$Sound<- as.factor(df2$Sound)
-levels(df2$Sound)<- c("Novel", "Standard")
-
-
-
-Plot2 <-ggplot(df2, aes(x= Delay, y= Mean, group= Sound, colour= Sound, shape= Sound,
-                        ymin= Mean- SE, ymax= Mean+SE)) +
-  theme_classic(14) +geom_point(size=4.5)+ geom_line(size=2)+ 
-  #scale_colour_brewer(palette="Accent")+ 
-  scale_color_manual(values=sound_pallete)+
-  coord_cartesian(clip = 'off')+
-  xlab("Sound onset delay (in ms)")+ #ylim(220, 280)+
-  scale_shape_manual(values=c(15, 17))+
-  scale_x_discrete(expand = c(0.05,0.05))+
-  ylab("First fixation duration (in ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
-  #annotate("text", x = -2, y = 290, label = "a)             ")+
-  theme(legend.position= c(0.82,0.87), legend.key.width=unit(1.5,"cm"),
-        panel.grid.major = element_line(size = 0.5, linetype = 'solid', colour = "white"), 
-        panel.grid.minor = element_line(size = 0.25, linetype = 'solid', colour = "white")); Plot2
-
-ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 7, height = 6)
-
-
-
-
+ggsave(filename = 'Plots/main_seq_dur.pdf', plot = SP2, width = 8, height = 5)
 
 
 # merge descriptive plots: 
 library(ggpubr)
 
-figure1 <- ggarrange(Plot, Plot, ncol = 2, nrow = 1, common.legend = TRUE, legend = "top")
-figure2 <- ggarrange(figure1, SP, ncol = 1, nrow = 2, common.legend = TRUE, legend = "top")
-
-
-ggsave(filename = 'Plots/Des_merged.pdf', plot = figure2, width = 8, height = 10)
+figure1 <- ggarrange(SP, SP2, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom")
+ggsave(filename = 'Plots/main_seq.pdf', plot = figure1, width = 8, height = 9)
 
 ####
 # LMM analyses:
@@ -410,12 +394,12 @@ df2$Sound<- "Novel"
 
 df<- rbind(df1, df2)
 df$Sound<- as.factor(df$Sound)
-df$Sound<- factor(df$Sound, levels= c('Standard', "Novel"))
+df$Sound<- factor(df$Sound, levels= c('Novel', "Standard"))
 levels(df$Sound)
 
 P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound))+  
   coord_cartesian(xlim = c(80, 800))+
-  theme_bw(14)+ xlab("First fixation duration") + ylab("Survival (%)")+
+  theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Survival (%)")+
   ggtitle("0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= "#8f8f8f")+ 
   geom_vline(xintercept = 130, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 185, linetype= "dashed", 
                                                                                color= "#8f8f8f") + 
@@ -423,9 +407,9 @@ P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound
   geom_line()+ annotate("text", x = 500, y = 85, label = "Divergence point= 152 ms [95% CI: 130, 152]")+
   scale_x_continuous(breaks= seq(100,1000,100))+ #xlim(100, 1000)+
   #scale_colour_brewer(palette="Dark2")  + 
-  scale_color_manual(values=c(sound_pallete[2], sound_pallete[1]))+
-  theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
-        panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P1
+  scale_color_manual(values= pallete1[1:2])#+
+  #theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
+  #      panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P1
 
 ggsave(filename = "Plots/Survival0ms.pdf", plot = P1, width = 7, height = 5)
 
@@ -462,21 +446,21 @@ df2$Sound<- "Novel"
 
 df<- rbind(df1, df2)
 df$Sound<- as.factor(df$Sound)
-df$Sound<- factor(df$Sound, levels= c('Standard', "Novel"))
+df$Sound<- factor(df$Sound, levels= c('Novel', "Standard"))
 levels(df$Sound)
 
 P2<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound)) +
   coord_cartesian(xlim = c(80, 800))+
-  theme_bw(14)+ xlab("First fixation duration") + ylab("Survival (%)")+
+  theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Survival (%)")+
   ggtitle("120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
   geom_vline(xintercept = 149, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 198, linetype= "dashed", 
   color= "#8f8f8f") + geom_line()+ 
   annotate("text", x = 500, y = 85, label = "Divergence point= 178 ms [95% CI: 149, 198]")+
   scale_x_continuous(breaks= seq(100,1000,100))+
   #scale_colour_brewer(palette="Dark2") + 
-  scale_color_manual(values=c(sound_pallete[2], sound_pallete[1]))+
-  theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
-        panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P2
+  scale_color_manual(values= pallete1[1:2])#+
+#  theme(panel.grid.major = element_line(colour= "#f4f5f7", size=0.4),
+#        panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P2
 
 
 ggsave(filename = "Plots/Survival120ms.pdf", plot = P2, width = 7, height = 5)
