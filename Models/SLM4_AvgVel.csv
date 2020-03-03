@@ -1,5 +1,5 @@
 "";"Estimate";"Std. Error";"t value"
-"Intercept";117,146;1,75;66,945
-"Sound (Novel vs STD)";0,679;1,151;0,59
-"Delay (120 vs 0ms)";1,312;1,073;1,222
-"Sound x Delay";2,077;1,44;1,442
+"Intercept";117,103;1,785;65,604
+"Sound (Novel vs STD)";0,646;1,005;0,643
+"Delay (120 vs 0ms)";1,326;1,049;1,264
+"Sound x Delay";1,869;1,43;1,307

@@ -48,7 +48,7 @@ rm(list= ls())
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
 
 # load/ install required packages:
-packages= c("reshape", "lme4", 'car', "ggplot2", "mgcv", "itsadug", "ggpubr", "grid") # list of used packages:
+packages= c("reshape", "lme4", 'car', "ggplot2", "mgcv", "itsadug", "ggpubr", "grid", "emmeans") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -127,6 +127,8 @@ mFix$Delay<- as.factor(mFix$Delay)
 mFix$Sound<- as.factor(mFix$Sound)
 levels(mFix$Sound)<- c("Novel", "Standard")
 
+library(ggplot2)
+
 Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, fill=Sound, colour= Sound, shape= Sound,
                         ymin= Mean- SE, ymax= Mean+SE)) +
   theme_classic(18) +geom_point(size=4.5)+ geom_line(size=2)+ 
@@ -168,8 +170,8 @@ dat$del<- as.factor(dat$del)
 contrasts(dat$del)
 
 if(!file.exists("Models/LM1.Rda")){
-  # doesn't converge with delay slope for items
-  summary(LM1<-lmer(log(N1) ~ sound_type*del + (sound_type+del|sub)+ (sound_type|item),
+  # doesn't converge with any other slopes
+  summary(LM1<-lmer(log(N1) ~ sound_type*del + (del|sub)+ (1|item),
             data= dat, REML= TRUE))
   save(LM1, file= "Models/LM1.Rda")
   
@@ -184,8 +186,7 @@ write.csv2(SM1, file = "Models/SM1_FixDur.csv")
 
 ### simple effects analysis:
 
-library(emmeans)
-#EM<- emmeans(LM1, pairwise ~ sound_type*del, pbkrtest.limit = 5832)
+EM<- emmeans(LM1, pairwise ~ sound_type*del, pbkrtest.limit = 5825)
 
 
 # Calculate effect sizes:
@@ -313,9 +314,9 @@ rownames(SLM2)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "S
 write.csv2(SLM2, file = "Models/SLM2_saccDur.csv")
 
 ####
-# saccade peak velocity:
-if(!file.exists("Models/LM3.Rda")){
-  summary(LM3<- lmer(sacc_peak ~ sound_type*del + (1|sub)+ (1|item),
+# peak saccade velocity:
+if(!file.exists("Models /LM3.Rda")){
+  summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (1|item),
              data= dat))
   save(LM3, file= "Models/LM3.Rda")
 }else{
@@ -329,7 +330,7 @@ write.csv2(SLM3, file = "Models/SLM3_PeakVel.csv")
 ####
 # average saccade velocity:
 if(!file.exists("Models/LM4.Rda")){
-  summary(LM4<- lmer(sacc_vel ~ sound_type*del + (1|sub)+ (1|item),
+  summary(LM4<- lmer(sacc_vel ~ sound_type*del + (del|sub)+ (1|item),
              data= dat))
   save(LM4, file= "Models/LM4.Rda")
 }else{
@@ -343,7 +344,7 @@ write.csv2(SLM4, file = "Models/SLM4_AvgVel.csv")
 ####
 # saccade amplitude:
 if(!file.exists("Models/LM5.Rda")){
-  summary(LM5<- lmer(sacc_ampl ~ sound_type*del + (del|sub)+ (1|item),
+  summary(LM5<- lmer(log(sacc_ampl) ~ sound_type*del + (sound_type|sub)+ (1|item),
              data= dat))
   save(LM5, file= "Models/LM5.Rda")
 }else{
@@ -398,11 +399,11 @@ levels(df$Sound)
 P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound))+  
   coord_cartesian(xlim = c(80, 800))+
   theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Survival (%)")+
-  ggtitle("0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= "#8f8f8f")+ 
+  ggtitle("a) 0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= "#8f8f8f")+ 
   geom_vline(xintercept = 130, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 185, linetype= "dashed", 
                                                                                color= "#8f8f8f") + 
 #  geom_rect(fill= pallete1[5], color="black", alpha=0.005, show.legend = F, inherit.aes = T)+
-  geom_line()+ annotate("text", x = 500, y = 85, label = "Divergence point= 152 ms [95% CI: 130, 152]")+
+  geom_line()+ annotate("text", x = 500, y = 85, label = "Divergence point= 152 ms [95% CI: 130, 185]")+
   scale_x_continuous(breaks= seq(100,1000,100))+ #xlim(100, 1000)+
   #scale_colour_brewer(palette="Dark2")  + 
   scale_color_manual(values= pallete1[1:2])#+
@@ -450,7 +451,7 @@ levels(df$Sound)
 P2<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound)) +
   coord_cartesian(xlim = c(80, 800))+
   theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Survival (%)")+
-  ggtitle("120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
+  ggtitle("b) 120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
   geom_vline(xintercept = 149, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 198, linetype= "dashed", 
   color= "#8f8f8f") + geom_line()+ 
   annotate("text", x = 500, y = 85, label = "Divergence point= 178 ms [95% CI: 149, 198]")+
