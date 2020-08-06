@@ -88,12 +88,18 @@ NwarmUp<- 500
 Niter<- 2000
 Nchains<- 4
 
-LM1<- brm(formula = log(N1) ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp, iter = Niter, chains = Nchains,
-          sample_prior = TRUE, cores = detectCores(),
-                                            prior =  c(set_prior('normal(0, 1)', class = 'b', coef= 'sound_typeDEV'),
-                                            set_prior('normal(0, 1)', class = 'b', coef= 'del120'),
-                                            set_prior('normal(0, 1)', class = 'b', coef= 'sound_typeDEV:del120'),
-                                            set_prior('normal(0, 5)', class = 'Intercept')))
+if(!file.exists("Models/Bayesian/LM1.Rda")){
+  LM1<- brm(formula = log(N1) ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp, iter = Niter, chains = Nchains,
+            sample_prior = TRUE, cores = detectCores(),
+            prior =  c(set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:del120'),
+                       set_prior('normal(0, 5)', class = 'Intercept')))
+  
+  save(LM1, file= "Models/Bayesian/LM1.Rda")
+}else{
+  load('Models/Bayesian/LM1.Rda')
+}
 
 
 summary(LM1)
@@ -102,29 +108,20 @@ prior_summary(LM1)
 
 ## Bayes factors:
 
+# Note: the Bayes Factor is BH_01, so values >1 indicate evidence for the null, and values <1 indicate 
+# evidence in support of the alternative
+
 # sound effect:
 BF_sound = hypothesis(LM1, hypothesis = 'sound_typeDEV = 0')  # H0: No sound effect
 BF_sound$hypothesis
 
 # delay effect:
-BF_del = hypothesis(LM1, hypothesis = 'del120 = 0')  # H0: No sound effect
+BF_del = hypothesis(LM1, hypothesis = 'del120 = 0')  # H0: No delay effect
 BF_del$hypothesis
 
 # interaction effect:
-BF_int = hypothesis(LM1, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound effect
+BF_int = hypothesis(LM1, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound x delay interaction
 BF_int$hypothesis
-
-
-
-if(!file.exists("Models/LM1.Rda")){
-  # doesn't converge with any other slopes
-  summary(LM1<-lmer(log(N1) ~ sound_type*del + (del|sub)+ (1|item),
-            data= dat, REML= TRUE))
-  save(LM1, file= "Models/LM1.Rda")
-  
-}else{
-  load("Models/LM1.Rda")
-}
 
 
 ###########################
@@ -139,6 +136,40 @@ contrasts(dat$sound_type)
 contrasts(dat$del)
 
 # saccade duration:
+if(!file.exists("Models/Bayesian/LM2.Rda")){
+  LM2<- brm(formula = log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (1|item), data = dat, warmup = NwarmUp,
+            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),
+            prior =  c(set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:del120'),
+                       set_prior('normal(0, 5)', class = 'Intercept')))
+  
+  save(LM2, file= "Models/Bayesian/LM2.Rda")
+}else{
+  load("Models/Bayesian/LM2.Rda")
+}
+
+summary(LM2)
+prior_summary(LM2)
+
+
+## Bayes factors:
+
+# Note: the Bayes Factor is BH_01, so values >1 indicate evidence for the null, and values <1 indicate 
+# evidence in support of the alternative
+
+# sound effect:
+BF_sound2 = hypothesis(LM2, hypothesis = 'sound_typeDEV = 0')  # H0: No sound effect
+BF_sound2$hypothesis
+
+# delay effect:
+BF_del2 = hypothesis(LM2, hypothesis = 'del120 = 0')  # H0: No delay effect
+BF_del2$hypothesis
+
+# interaction effect:
+BF_int2 = hypothesis(LM2, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound x delay interaction
+BF_int2$hypothesis
+
 
 if(!file.exists("Models/LM2.Rda")){
   summary(LM2<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (1|item),
