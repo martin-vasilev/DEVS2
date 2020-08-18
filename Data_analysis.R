@@ -137,7 +137,7 @@ Plot <-ggplot(mFix, aes(x= Delay, y= Mean, group= Sound, fill=Sound, colour= Sou
   scale_fill_manual(values=pallete1[1:2])+
   coord_cartesian(clip = 'off')+
   xlab("Sound onset delay (ms)")+ ylim(220, 280)+
-  scale_shape_manual(values=c(16, 17))+
+  scale_shape_manual(values=c(15, 17))+
   scale_x_discrete(expand = c(0.1,0.1))+
   ylab("First fixation duration (ms)")+ geom_ribbon(alpha=0.1, colour=NA)+
   #annotate("text", x = -2, y = 290, label = "a)             ")+
