@@ -185,6 +185,41 @@ write.csv2(SLM2, file = "Models/SLM2_saccDur.csv")
 
 ####
 # peak saccade velocity:
+
+if(!file.exists("Models/Bayesian/LM3.Rda")){
+  LM3<- brm(formula = sacc_peak ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp,
+            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),
+            prior =  c(set_prior('normal(0, 2)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 2)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 2)', class = 'b', coef= 'sound_typeDEV:del120'),
+                       set_prior('normal(0, 250)', class = 'Intercept')))
+  
+  save(LM3, file= "Models/Bayesian/LM3.Rda")
+}else{
+  load("Models/Bayesian/LM3.Rda")
+}
+
+summary(LM3)
+prior_summary(LM3)
+
+
+## Bayes factors:
+
+# Note: the Bayes Factor is BH_01, so values >1 indicate evidence for the null, and values <1 indicate 
+# evidence in support of the alternative
+
+# sound effect:
+BF_sound3 = hypothesis(LM3, hypothesis = 'sound_typeDEV = 0')  # H0: No sound effect
+BF_sound3$hypothesis
+
+# delay effect:
+BF_del3 = hypothesis(LM3, hypothesis = 'del120 = 0')  # H0: No delay effect
+BF_del3$hypothesis
+
+# interaction effect:
+BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound x delay interaction
+BF_int3$hypothesis
+
 if(!file.exists("Models /LM3.Rda")){
   summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (1|item),
              data= dat))
