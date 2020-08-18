@@ -5,4 +5,3 @@ Explanation of data files:
             time stamps, etc.
 - fix:      a (big!) data frame containing all fixations in the experiment (+ various details about them)
 - quest:    question accuracy data            
-- FD:       local, word-level fixation measures for the target word (e.g., FFD, SFD, GD, etc.)
