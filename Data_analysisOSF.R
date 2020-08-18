@@ -9,46 +9,47 @@ rm(list= ls())
 #            Main data column explanation:            #
 #######################################################
 
-# sub:        subject number
-# item:       item (sentence) number from the corpus file
-# cond:       condition number (2= standard, 3= novel)
-# seq:        trial sequence, or the order in which trials were presented in the experiment
-# trialStart: start of trial time stamp in raw asc file
-# trialEnd:   end of trial time stamp in raw asc file
-# sound:      target word number on which the sound is played
-# sound_type: sound condition (STD= Standard; DEV= Novel sound); NB: DEV is used for historical reasons only (convenience)
-# regionS:    start of target word region (empty space before target word), in pixels (x pos)
-# regionE:    end of target word region (end of target word), in pixels (x pos)
-# tBnd:       timestamp in the raw data showing when the invisible boundary was crossed
-# tSFIX:      timestamp corresponding to the start of the next fixation after crossing the boundary
-# tPlaySound: timestamp when the command to play the sound was executed
-# ISI:        inter-stimulus interval between playing the current and the previous sound (in ms)
-# nextFlag:   what's the next flag in the data file after the sound is played (ESACC= end of saccade; EFIX= end of fixation)
-# delBnd:     delay (in ms) between crossing the invisible boundary and playing the sound
-# delFix:     delay (in ms) in playing the sound relative to the start of the next fixation
-# del:        Experimental delay condition (from experiment design)
-# SOD:        stimulus onsed delay of playing the sound relative to start of fixation
-# prevFix:    x position of previous fixation before crossing the boundary
-# nextFix:    x position of next fixation after crossing the boundary
-# N1:         duration of next fixation after crossing boundary (i.e., this is when the sound is played)
-# N2:         duration of the second fixation after boundary (i.e., fixation after the one when the sound is played)
-# sacc_dur:   duration of next saccae after sound is played (in ms)
-# sacc Sflag: timestamp of the start of saccade after sound is played
-# sacc_peak:  peak saccade velocity for next saccade after sound is played (in deg/s)
-# sacc_vel:   average saccade velocity for next saccade after sound is played (in deg/s)
-# sacc_ampl:  amplitude of next saccade after playing sound
-# order:      sound order in experiment
-# word:       word number in the sentence
-# Trialt:     duration of the trial (in ms); does not include questions, only reading time
-# next_sacc:  amplitude of the next saccade in letters (after playing sound)
-
+# sub:            subject number
+# item:           item (sentence) number from the corpus file
+# cond:           condition number (2= standard, 3= novel)
+# seq:            trial sequence, or the order in which trials were presented in the experiment
+# trialStart:     start of trial time stamp in raw asc file
+# trialEnd:       end of trial time stamp in raw asc file
+# sound:          target word number on which the sound is played
+# sound_type:     sound condition (STD= Standard; DEV= Novel sound); NB: DEV is used for historical reasons only (convenience)
+# regionS:        start of target word region (empty space before target word), in pixels (x pos)
+# regionE:        end of target word region (end of target word), in pixels (x pos)
+# tBnd:           timestamp in the raw data showing when the invisible boundary was crossed
+# tSFIX:          timestamp corresponding to the start of the next fixation after crossing the boundary
+# tPlaySound:     timestamp when the command to play the sound was executed
+# ISI:            inter-stimulus interval between playing the current and the previous sound (in ms)
+# nextFlag:       what's the next flag in the data file after the sound is played (ESACC= end of saccade; EFIX= end of fixation)
+# delBnd:         delay (in ms) between crossing the invisible boundary and playing the sound
+# delFix:         delay (in ms) in playing the sound relative to the start of the next fixation
+# del:            Experimental delay condition (from experiment design)
+# SOD:            stimulus onsed delay of playing the sound relative to start of fixation
+# prevFix:        x position of previous fixation before crossing the boundary
+# nextFix:        x position of next fixation after crossing the boundary
+# N1:             duration of next fixation after crossing boundary (i.e., this is when the sound is played)
+# N2:             duration of the second fixation after boundary (i.e., fixation after the one when the sound is played)
+# sacc_dur:       duration of next saccae after sound is played (in ms)
+# sacc Sflag:     timestamp of the start of saccade after sound is played
+# sacc_peak:      peak saccade velocity for next saccade after sound is played (in deg/s)
+# sacc_vel:       average saccade velocity for next saccade after sound is played (in deg/s)
+# sacc_ampl:      amplitude of next saccade after playing sound
+# order:          sound order in experiment
+# word:           word number in the sentence
+# Trialt:         duration of the trial (in ms); does not include questions, only reading time
+# next_sacc:      amplitude of the next saccade in letters (after playing sound)
+# skip:           was the target skipped or not (1= yes; 0= no)
+# next_sacc_type  contains information about whether the next saccade was intra-word or inter-word  
 
 
 # colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
 
 # load/ install required packages:
-packages= c("reshape", "lme4", 'car', "ggplot2", "mgcv", "itsadug", "ggpubr", "grid", "emmeans") # list of used packages:
+packages= c("reshape", "lme4", 'car', "ggplot2", "ggpubr", "grid", "emmeans") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -228,12 +229,24 @@ Sound0<- Cohens_d(M_C = mFix$Mean[mFix$Sound== "Standard" & mFix$Delay==0],
 ###########################
 
 # Descriptives:
-DesSacc<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+DesSacc<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del', 'next_sacc_type'), 
               measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'sacc_ampl'), na.rm=TRUE)
 mSacc<- cast(DesSacc, sound_type+del ~ variable
             ,function(x) c(M=signif(mean(x),3)
                            , SD= sd(x) ))
 write.csv2(mSacc[c(1,3,2,4), ], file= "Descriptives/Sacc.csv")
+
+
+# Separation by intra-word and inter-word saccades (as requested by Reviewer 2)
+DesSacc2<- melt(subset(dat, !is.na(next_sacc_type)), id=c('sub', 'item', 'cond', 'sound_type', 'del', 'next_sacc_type'), 
+               measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'sacc_ampl'), na.rm=TRUE)
+mSacc2<- cast(DesSacc2, sound_type+del+next_sacc_type ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+
+write.csv2(mSacc2, file= "Descriptives/Sacc2.csv")
+
+table(dat$next_sacc_type)
 
 ##################
 # saccade plot:
@@ -471,3 +484,105 @@ ggsave(filename = "Plots/Survival120ms.pdf", plot = P2, width = 7, height = 5)
 figure <- ggarrange(P1, P2, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom", align = "h")
 ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
 
+
+
+
+########################################################################################################################################
+#                                         Sensitivity anlysis excluding target skips                                                   #
+########################################################################################################################################
+
+dat2<- subset(dat, skip==0)
+
+nrow(dat2)
+
+# check contrast coding
+contrasts(dat2$sound_type)
+contrasts(dat2$del)
+
+
+####################
+# Fixation duration:
+####################
+
+if(!file.exists("Models/NoSkips/LM1_ns.Rda")){
+  # doesn't converge with any other slopes
+  summary(LM1_ns<-lmer(log(N1) ~ sound_type*del + (del|sub)+ (1|item),
+                    data= dat2, REML= TRUE))
+  save(LM1_ns, file= "Models/NoSkips/LM1_ns.Rda")
+  
+}else{
+  load("Models/NoSkips/LM1_ns.Rda")
+}
+
+SM1_ns<- round(coef(summary(LM1_ns)),3)
+
+rownames(SM1_ns)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SM1_ns, file = "Models/NoSkips/SM1_FixDur.csv")
+
+
+###################
+# saccade duration:
+###################
+if(!file.exists("Models/NoSkips/LM2_ns.Rda")){
+  summary(LM2_ns<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (1|item),
+                     data= dat2))
+  save(LM2_ns, file= "Models/NoSkips/LM2_ns.Rda")
+}else{
+  load("Models/NoSkips/LM2_ns.Rda")
+}
+
+SLM2_ns<- round(coef(summary(LM2_ns)), 3)
+rownames(SLM2_ns)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM2_ns, file = "Models/NoSkips/SLM2_saccDur.csv")
+
+
+
+####################
+# saccade amplitude:
+####################
+
+if(!file.exists("Models/NoSkips/LM5_ns.Rda")){
+  summary(LM5_ns<- lmer(log(sacc_ampl) ~ sound_type*del + (sound_type|sub)+ (1|item),
+                     data= dat2))
+  save(LM5_ns, file= "Models/NoSkips/LM5_ns.Rda")
+}else{
+  load("Models/NoSkips/LM5_ns.Rda")
+}
+
+SLM5_ns<- round(coef(summary(LM5_ns)), 3)
+rownames(SLM5_ns)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM5_ns, file = "Models/NoSkips/SLM5_SaccAmpl.csv")
+
+
+########################
+# peak saccade velocity:
+########################
+
+if(!file.exists("Models/NoSkips/LM3_ns.Rda")){
+  summary(LM3_ns<- lmer(sacc_peak ~ sound_type*del + (sound_type|sub)+ (1|item),
+                     data= dat2))
+  save(LM3_ns, file= "Models/NoSkips/LM3.Rda")
+}else{
+  load("Models/NoSkips/LM3_ns.Rda")
+}
+
+SLM3_ns<- round(coef(summary(LM3_ns)), 3)
+rownames(SLM3_ns)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM3_ns, file = "Models/NoSkips/SLM3_PeakVel.csv")
+
+
+###########################
+# average saccade velocity:
+###########################
+
+if(!file.exists("Models/NoSkips/LM4_ns.Rda")){
+  summary(LM4_ns<- lmer(sacc_vel ~ sound_type*del + (del|sub)+ (1|item),
+                     data= dat2))
+  save(LM4_ns, file= "Models/NoSkips/LM4_ns.Rda")
+}else{
+  load("Models/NoSkips/LM4_ns.Rda")
+}
+
+SLM4_ns<- round(coef(summary(LM4_ns)), 3)
+rownames(SLM4_ns)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM4_ns, file = "Models/NoSkips/SLM4_AvgVel.csv")
