@@ -114,6 +114,11 @@ SGM1
 
 load("data/dat.Rda")
 
+table(dat$del, dat$sound_type)
+chisq.test(table(dat$del, dat$sound_type))
+
+
+
 DesFix<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
               measure=c("N1"), na.rm=TRUE)
 mFix<- cast(DesFix, sound_type+del ~ variable
@@ -486,6 +491,15 @@ figure <- ggarrange(P1, P2, ncol = 1, nrow = 2, common.legend = TRUE, legend = "
 ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
 
 
+
+########################################################################################################################################
+#                                                      Bayes Factor Analyses                                                           #
+########################################################################################################################################
+
+
+
+
+
 ########################################################################################################################################
 #                                        First-pass re-fixation probability                                                            #
 ########################################################################################################################################
@@ -519,6 +533,72 @@ rownames(SGM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "S
 write.csv2(SGM1, file = "Models/SGM1_Refix_prob.csv")
 
 
+
+########################################################################################################################################
+#                                                 Intra-word vs. Inter-word saccades                                                   #
+########################################################################################################################################
+
+# check contrast coding
+contrasts(dat$sound_type)
+contrasts(dat$del)
+
+dat$next_sacc_type2<- as.factor(dat$next_sacc_type2)
+contrasts(dat$next_sacc_type2)<- c(1, 0)
+contrasts(dat$next_sacc_type2)
+
+intra<- subset(dat, next_sacc_type2== "intra-word")
+inter<- subset(dat, next_sacc_type2== "inter-word")
+
+###################
+# saccade duration:
+###################
+
+# intra:
+if(!file.exists("Models/SaccType/LM2_intra.Rda")){
+  summary(LM2_intra<- lmer(log(sacc_dur) ~ sound_type*del + (del|sub)+ (1|item),
+                        data= intra))
+  save(LM2_intra, file= "Models/SaccType/LM2_intra.Rda")
+}else{
+  load("Models/SaccType/LM2_intra.Rda")
+}
+
+SLM2_intra<- round(coef(summary(LM2_intra)), 3)
+rownames(SLM2_intra)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM2_intra, file = "Models/SaccType/SLM2_saccDur_intra.csv")
+
+# inter:
+if(!file.exists("Models/SaccType/LM2_inter.Rda")){
+  summary(LM2_inter<- lmer(log(sacc_dur) ~ sound_type*del + (1|sub)+ (1|item),
+                           data= inter))
+  save(LM2_inter, file= "Models/SaccType/LM2_inter.Rda")
+}else{
+  load("Models/SaccType/LM2_inter.Rda")
+}
+
+SLM2_inter<- round(coef(summary(LM2_inter)), 3)
+rownames(SLM2_inter)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SLM2_inter, file = "Models/SaccType/SLM2_saccDur_inter.csv")
+
+
+
+# peak velocity:
+summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (sound_type|item),
+                   data= intra))
+summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (sound_type|item),
+                   data= inter))
+
+
+# avg velocity:
+summary(LM4<- lmer(sacc_vel ~ sound_type*del + (1|sub)+ (1|item),
+                   data= intra))
+summary(LM4<- lmer(sacc_vel ~ sound_type*del + (del|sub)+ (1|item),
+                   data= inter))
+
+# amplitude;
+summary(LM5<- lmer(log(sacc_ampl) ~ sound_type*del + (1|sub)+ (1|item),
+                   data= intra))
+summary(LM5<- lmer(log(sacc_ampl) ~ sound_type*del + (del|sub)+ (1|item),
+                   data= inter))
 
 ########################################################################################################################################
 #                                         Sensitivity anlysis excluding target skips                                                   #

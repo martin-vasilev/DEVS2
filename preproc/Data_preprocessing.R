@@ -1,5 +1,5 @@
 
-# Martin R. Vasilev, 2017
+# Martin R. Vasilev, 2019-2020
 
 rm(list=ls())
 
@@ -126,7 +126,6 @@ dat$keep<- NULL
 dat$N1len<- NULL
 dat$N2len<- NULL
 dat$skip<- ifelse(dat$onTarget=="Yes", 0, 1)
-dat$next_sacc_type<- ifelse(dat$N1x>= dat$regionE, "inter-word", 'intra-word')
 
 
 
@@ -183,6 +182,7 @@ if(!file.exists("preproc/dataN.Rda")){
   write.csv(dataN, file= "preproc/dataN.csv")
 }else{
   load("preproc/dataN.Rda")
+  library(EMreading)
 }
 
 
@@ -254,9 +254,74 @@ for(i in 1:nrow(dat)){
   
 }
 
+dat$next_sacc_type<- NA
+
+for(i in 1:nrow(dat)){
+  s<- subset(fix, sub== dat$sub[i] & item== dat$item[i])
+  
+  a<- which(s$xPos== dat$nextFix[i])
+  
+  if(length(a)>1){
+    a<- a[1]
+    warning('oops :)')
+  }
+  
+  if(length(a)>0){
+    wordN<- s$word[a]
+    wordN1<- s$word[a+1]
+    
+    if(wordN==wordN1){
+      dat$next_sacc_type[i]<- 'intra-word'
+    }else{
+      dat$next_sacc_type[i]<- 'inter-word'
+    }
+  }
+  
+}
+
+
 # save main data
 save(dat, file= "data/dat.Rda")
 write.csv2(dat, file= "data/dat.csv")
+
+
+
+
+
+
+# sound_check$sound_type<- as.character(sound_check$sound_type)
+# sound_check$del<- as.character(sound_check$del)
+# 
+# fix$keep<- 0
+# fix$keepN1<- 0
+# fix$sound<- NA
+# fix$del<- NA
+# 
+# for(i in 1:nrow(fix)){
+#   a<- which(sound_check$sub== fix$sub[i] & sound_check$item== fix$item[i] & sound_check$word== fix$word[i])
+#   
+#   if(length(a)>0){
+#     fix$keep[i]<- 1
+#     fix$sound[i]<- sound_check$sound_type[a]
+#     fix$del[i]<- sound_check$del[a]
+#     
+#     b<- which(fix$item== fix$item[i] & fix$sub== fix$sub[i] & fix$word== fix$word[i]+1)
+#     if(length(b>0)){
+#       fix$keepN1[b]<- 1
+#       fix$sound[b]<- sound_check$sound_type[a]
+#     }
+#     
+#   }
+# }
+# 
+# TWraw<- subset(fix, keep==1)
+
+
+
+
+
+
+
 
 
 # library(reshape)
@@ -303,35 +368,6 @@ write.csv2(dat, file= "data/dat.csv")
 # # TVT:
 # summary(LM1<-lmer(log(altTVT) ~ sound*del + (sound+del|sub)+ (sound+del|item), data= TW, REML=T))
 # 
-
-
-# sound_check$sound_type<- as.character(sound_check$sound_type)
-# sound_check$del<- as.character(sound_check$del)
-# 
-# fix$keep<- 0
-# fix$keepN1<- 0
-# fix$sound<- NA
-# fix$del<- NA
-# 
-# for(i in 1:nrow(fix)){
-#   a<- which(sound_check$sub== fix$sub[i] & sound_check$item== fix$item[i] & sound_check$word== fix$word[i])
-#   
-#   if(length(a)>0){
-#     fix$keep[i]<- 1
-#     fix$sound[i]<- sound_check$sound_type[a]
-#     fix$del[i]<- sound_check$del[a]
-#     
-#     b<- which(fix$item== fix$item[i] & fix$sub== fix$sub[i] & fix$word== fix$word[i]+1)
-#     if(length(b>0)){
-#       fix$keepN1[b]<- 1
-#       fix$sound[b]<- sound_check$sound_type[a]
-#     }
-#     
-#   }
-# }
-# 
-# TWraw<- subset(fix, keep==1)
-
 
 # source("functions/nFix.R")
 # nFix<- nFix(TWraw)
