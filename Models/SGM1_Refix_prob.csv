@@ -1,0 +1,5 @@
+"";"Estimate";"Std. Error";"z value";"Pr(>|z|)"
+"Intercept";-1,834;0,114;-16,152;0
+"Sound (Novel vs STD)";0,067;0,111;0,609;0,543
+"Delay (120 vs 0ms)";-0,091;0,121;-0,749;0,454
+"Sound x Delay";-0,277;0,164;-1,686;0,092

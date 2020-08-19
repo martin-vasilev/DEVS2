@@ -128,8 +128,6 @@ dat$N2len<- NULL
 dat$skip<- ifelse(dat$onTarget=="Yes", 0, 1)
 dat$next_sacc_type<- ifelse(dat$N1x>= dat$regionE, "inter-word", 'intra-word')
 
-save(dat, file= "data/dat.Rda")
-write.csv2(dat, file= "data/dat.csv")
 
 
 ### subset data for DPA analysis:
@@ -241,15 +239,24 @@ save(TW, file= 'preproc/TW.Rda')
 write.csv(TW, file= 'preproc/TW.csv')
 #save(N1, file='data/N1.Rda')
 
-dat$next_word<- NA
+# code 1st-pass refixation probability:
+TW$refix<- ifelse(TW$nfix1>1, 1, 0)
+TW$refix[which(TW$nfix1==0)]<- NA
+
+dat$refix_prob<- NA
 
 for(i in 1:nrow(dat)){
-  a<- which(fix$sub== dat$sub[i] & fix$item== dat$item[i]) #& fix$word== dat$word[i])
+  a<- which(TW$sub== dat$sub[i] & TW$item== dat$item[i])
   
-  
+  if(length(a)>0){
+    dat$refix_prob[i]<- TW$refix[a]
+  }
   
 }
 
+# save main data
+save(dat, file= "data/dat.Rda")
+write.csv2(dat, file= "data/dat.csv")
 
 
 # library(reshape)

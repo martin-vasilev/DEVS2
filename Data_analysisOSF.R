@@ -42,7 +42,8 @@ rm(list= ls())
 # Trialt:         duration of the trial (in ms); does not include questions, only reading time
 # next_sacc:      amplitude of the next saccade in letters (after playing sound)
 # skip:           was the target skipped or not (1= yes; 0= no)
-# next_sacc_type  contains information about whether the next saccade was intra-word or inter-word  
+# next_sacc_type  contains information about whether the next saccade was intra-word or inter-word
+# refix_prob      first-pass refixation probability
 
 
 # colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
@@ -484,6 +485,38 @@ ggsave(filename = "Plots/Survival120ms.pdf", plot = P2, width = 7, height = 5)
 figure <- ggarrange(P1, P2, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom", align = "h")
 ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
 
+
+########################################################################################################################################
+#                                        First-pass re-fixation probability                                                            #
+########################################################################################################################################
+
+# Descriptives:
+DesRefix<- melt(dat, id=c('sub', 'item', 'cond', 'sound_type', 'del'), 
+               measure=c('refix_prob'), na.rm=TRUE)
+mRF<- cast(DesRefix, sound_type+del ~ variable
+             ,function(x) c(M=signif(mean(x),3)
+                            , SD= sd(x) ))
+
+# check contrast coding
+contrasts(dat$sound_type)
+contrasts(dat$del)
+
+if(!file.exists("Models/GM1.Rda")){
+  # doesn't converge with any other slopes
+  
+  summary(GM1<-glmer(refix_prob ~ sound_type*del + (1|sub)+ (del|item),
+                     data= dat, family= binomial))
+  
+  save(GM1, file= "Models/GM1.Rda")
+  
+}else{
+  load("Models/GM1.Rda")
+}
+
+SGM1<- round(coef(summary(GM1)),3)
+
+rownames(SGM1)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
+write.csv2(SGM1, file = "Models/SGM1_Refix_prob.csv")
 
 
 
