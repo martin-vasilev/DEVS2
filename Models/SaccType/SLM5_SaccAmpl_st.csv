@@ -1,0 +1,9 @@
+"";"Estimate";"Std. Error";"t value"
+"Intercept";0,27;0,034;7,99
+"Sound (Novel vs STD)";-0,044;0,04;-1,108
+"Delay (120 vs 0ms)";0;0,042;-0,003
+"Saccade type";0,706;0,031;22,698
+"Sound x Delay";-0,01;0,06;-0,162
+"Sound x Saccade type";0,051;0,043;1,169
+"Delay x Saccade type";0,011;0,045;0,243
+"Sound x Delay x Saccade type";0,024;0,065;0,366

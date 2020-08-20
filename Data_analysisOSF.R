@@ -243,17 +243,6 @@ mSacc<- cast(DesSacc, sound_type+del ~ variable
 write.csv2(mSacc[c(1,3,2,4), ], file= "Descriptives/Sacc.csv")
 
 
-# Separation by intra-word and inter-word saccades (as requested by Reviewer 2)
-DesSacc2<- melt(subset(dat, !is.na(next_sacc_type)), id=c('sub', 'item', 'cond', 'sound_type', 'del', 'next_sacc_type'), 
-               measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'sacc_ampl'), na.rm=TRUE)
-mSacc2<- cast(DesSacc2, sound_type+del+next_sacc_type ~ variable
-             ,function(x) c(M=signif(mean(x),3)
-                            , SD= sd(x) ))
-
-write.csv2(mSacc2, file= "Descriptives/Sacc2.csv")
-
-table(dat$next_sacc_type)
-
 ##################
 # saccade plot:
 ##################
@@ -538,67 +527,98 @@ write.csv2(SGM1, file = "Models/SGM1_Refix_prob.csv")
 #                                                 Intra-word vs. Inter-word saccades                                                   #
 ########################################################################################################################################
 
+# Separation by intra-word and inter-word saccades (as requested by Reviewer 2)
+DesSacc2<- melt(subset(dat, !is.na(next_sacc_type)), id=c('sub', 'item', 'cond', 'sound_type', 'del', 'next_sacc_type'), 
+                measure=c('sacc_dur', 'sacc_peak', 'sacc_vel', 'sacc_ampl'), na.rm=TRUE)
+mSacc2<- cast(DesSacc2, sound_type+del+next_sacc_type ~ variable
+              ,function(x) c(M=signif(mean(x),3)
+                             , SD= sd(x) ))
+
+write.csv2(mSacc2, file= "Descriptives/Sacc2.csv")
+
+table(dat$next_sacc_type)
+
+
 # check contrast coding
 contrasts(dat$sound_type)
 contrasts(dat$del)
 
-dat$next_sacc_type2<- as.factor(dat$next_sacc_type2)
-contrasts(dat$next_sacc_type2)<- c(1, 0)
-contrasts(dat$next_sacc_type2)
+dat$next_sacc_type<- as.factor(dat$next_sacc_type)
+contrasts(dat$next_sacc_type)<- c(1, 0)
+contrasts(dat$next_sacc_type)
 
-intra<- subset(dat, next_sacc_type2== "intra-word")
-inter<- subset(dat, next_sacc_type2== "inter-word")
 
 ###################
 # saccade duration:
 ###################
 
-# intra:
-if(!file.exists("Models/SaccType/LM2_intra.Rda")){
-  summary(LM2_intra<- lmer(log(sacc_dur) ~ sound_type*del + (del|sub)+ (1|item),
-                        data= intra))
-  save(LM2_intra, file= "Models/SaccType/LM2_intra.Rda")
+if(!file.exists("Models/SaccType/LM2_st.Rda")){
+  summary(LM2_st<- lmer(log(sacc_dur) ~ sound_type*del*next_sacc_type + (1|sub)+ (1|item),
+                        data= dat))
+  save(LM2_st, file= "Models/SaccType/LM2_st.Rda")
 }else{
-  load("Models/SaccType/LM2_intra.Rda")
+  load("Models/SaccType/LM2_st.Rda")
 }
 
-SLM2_intra<- round(coef(summary(LM2_intra)), 3)
-rownames(SLM2_intra)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SLM2_intra, file = "Models/SaccType/SLM2_saccDur_intra.csv")
+SLM2_st<- round(coef(summary(LM2_st)), 3)
+rownames(SLM2_st)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Saccade type", "Sound x Delay",
+                      "Sound x Saccade type", "Delay x Saccade type", "Sound x Delay x Saccade type")
+write.csv2(SLM2_st, file = "Models/SaccType/SLM2_saccDur_st.csv")
 
-# inter:
-if(!file.exists("Models/SaccType/LM2_inter.Rda")){
-  summary(LM2_inter<- lmer(log(sacc_dur) ~ sound_type*del + (1|sub)+ (1|item),
-                           data= inter))
-  save(LM2_inter, file= "Models/SaccType/LM2_inter.Rda")
+
+####################
+# saccade amplitude:
+####################
+
+if(!file.exists("Models/SaccType/LM5_st.Rda")){
+  summary(LM5_st<- lmer(log(sacc_ampl) ~ sound_type*del*next_sacc_type + (sound_type|sub)+ (del|item),
+                        data= dat))
+  save(LM5_st, file= "Models/SaccType/LM5_st.Rda")
 }else{
-  load("Models/SaccType/LM2_inter.Rda")
+  load("Models/SaccType/LM5_st.Rda")
 }
 
-SLM2_inter<- round(coef(summary(LM2_inter)), 3)
-rownames(SLM2_inter)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SLM2_inter, file = "Models/SaccType/SLM2_saccDur_inter.csv")
+SLM5_st<- round(coef(summary(LM5_st)), 3)
+rownames(SLM5_st)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Saccade type", "Sound x Delay",
+                      "Sound x Saccade type", "Delay x Saccade type", "Sound x Delay x Saccade type")
+write.csv2(SLM5_st, file = "Models/SaccType/SLM5_SaccAmpl_st.csv")
 
 
+########################
+# peak saccade velocity:
+########################
 
-# peak velocity:
-summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (sound_type|item),
-                   data= intra))
-summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (sound_type|item),
-                   data= inter))
+if(!file.exists("Models/SaccType/LM3_st.Rda")){
+  summary(LM3_st<- lmer(sacc_peak ~ sound_type*del*next_sacc_type + (del|sub)+ (sound_type|item),
+                        data= dat))
+  save(LM3_st, file= "Models/SaccType/LM3_st.Rda")
+}else{
+  load("Models/SaccType/LM3_st.Rda")
+}
+
+SLM3_st<- round(coef(summary(LM3_st)), 3)
+rownames(SLM3_st)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Saccade type", "Sound x Delay",
+                      "Sound x Saccade type", "Delay x Saccade type", "Sound x Delay x Saccade type")
+write.csv2(SLM3_st, file = "Models/SaccType/SLM3_PeakVel_st.csv")
 
 
-# avg velocity:
-summary(LM4<- lmer(sacc_vel ~ sound_type*del + (1|sub)+ (1|item),
-                   data= intra))
-summary(LM4<- lmer(sacc_vel ~ sound_type*del + (del|sub)+ (1|item),
-                   data= inter))
+###########################
+# average saccade velocity:
+###########################
 
-# amplitude;
-summary(LM5<- lmer(log(sacc_ampl) ~ sound_type*del + (1|sub)+ (1|item),
-                   data= intra))
-summary(LM5<- lmer(log(sacc_ampl) ~ sound_type*del + (del|sub)+ (1|item),
-                   data= inter))
+if(!file.exists("Models/SaccType/LM4_st.Rda")){
+  summary(LM4_st<- lmer(sacc_vel ~ sound_type*del*next_sacc_type + (del|sub)+ (1|item),
+                        data= dat))
+  save(LM4_st, file= "Models/SaccType/LM4_st.Rda")
+}else{
+  load("Models/SaccType/LM4_st.Rda")
+}
+
+SLM4_st<- round(coef(summary(LM4_st)), 3)
+rownames(SLM4_st)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Saccade type", "Sound x Delay",
+                      "Sound x Saccade type", "Delay x Saccade type", "Sound x Delay x Saccade type")
+write.csv2(SLM4_st, file = "Models/SaccType/SLM4_AvgVel_st.csv")
+
 
 ########################################################################################################################################
 #                                         Sensitivity anlysis excluding target skips                                                   #
