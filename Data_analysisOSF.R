@@ -42,8 +42,8 @@ rm(list= ls())
 # Trialt:         duration of the trial (in ms); does not include questions, only reading time
 # next_sacc:      amplitude of the next saccade in letters (after playing sound)
 # skip:           was the target skipped or not (1= yes; 0= no)
+# refix_prob      first-pass refixation probability on the target word
 # next_sacc_type  contains information about whether the next saccade was intra-word or inter-word
-# refix_prob      first-pass refixation probability
 
 
 # colorblind palletes: # https://venngage.com/blog/color-blind-friendly-palette/
