@@ -13,8 +13,8 @@ rm(list= ls())
 # item:           item (sentence) number from the corpus file
 # cond:           condition number (2= standard, 3= novel)
 # seq:            trial sequence, or the order in which trials were presented in the experiment
-# trialStart:     start of trial time stamp in raw asc file
-# trialEnd:       end of trial time stamp in raw asc file
+# trialStart:     start of trial time stamp in raw asc. file
+# trialEnd:       end of trial time stamp in raw asc. file
 # sound:          target word number on which the sound is played
 # sound_type:     sound condition (STD= Standard; DEV= Novel sound); NB: DEV is used for historical reasons only (convenience)
 # regionS:        start of target word region (empty space before target word), in pixels (x pos)
@@ -27,18 +27,18 @@ rm(list= ls())
 # delBnd:         delay (in ms) between crossing the invisible boundary and playing the sound
 # delFix:         delay (in ms) in playing the sound relative to the start of the next fixation
 # del:            Experimental delay condition (from experiment design)
-# SOD:            stimulus onsed delay of playing the sound relative to start of fixation
+# SOD:            stimulus onset delay of playing the sound relative to start of fixation
 # prevFix:        x position of previous fixation before crossing the boundary
 # nextFix:        x position of next fixation after crossing the boundary
 # N1:             duration of next fixation after crossing boundary (i.e., this is when the sound is played)
 # N2:             duration of the second fixation after boundary (i.e., fixation after the one when the sound is played)
-# sacc_dur:       duration of next saccae after sound is played (in ms)
+# sacc_dur:       duration of next saccade after sound is played (in ms)
 # sacc Sflag:     timestamp of the start of saccade after sound is played
 # sacc_peak:      peak saccade velocity for next saccade after sound is played (in deg/s)
 # sacc_vel:       average saccade velocity for next saccade after sound is played (in deg/s)
 # sacc_ampl:      amplitude of next saccade after playing sound
 # order:          sound order in experiment
-# word:           word number in the sentence
+# word:           word number in the sentenceW
 # Trialt:         duration of the trial (in ms); does not include questions, only reading time
 # next_sacc:      amplitude of the next saccade in letters (after playing sound)
 # skip:           was the target skipped or not (1= yes; 0= no)
@@ -50,7 +50,7 @@ rm(list= ls())
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
 
 # load/ install required packages:
-packages= c("reshape", "lme4", 'car', "ggplot2", "ggpubr", "grid", "emmeans") # list of used packages:
+packages= c("reshape", "lme4", 'car', "ggplot2", "ggpubr", "grid", "emmeans", 'BayesFactor') # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -484,10 +484,27 @@ ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
 ########################################################################################################################################
 #                                                      Bayes Factor Analyses                                                           #
 ########################################################################################################################################
+#
+
+dat$N1_log<- log(dat$N1)
+dat$sub<- as.factor(dat$sub)
+dat$item<- as.factor(dat$item)
 
 
+# sound effect:
+summary(FD<- lmBF(N1_log~  sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
+summary(FD2<- lmBF(N1_log~ sound_type + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
 
+FD2/FD
 
+# delay effect:
+summary(FD3<- lmBF(N1_log~ del + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
+FD3/FD
+
+# Sound x Delay interaction:
+summary(FD4<- lmBF(N1_log~ sound_type+ del + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
+summary(FD5<- lmBF(N1_log~ sound_type*del + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
+FD5/FD4
 
 ########################################################################################################################################
 #                                        First-pass re-fixation probability                                                            #

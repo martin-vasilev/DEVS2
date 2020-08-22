@@ -67,6 +67,10 @@ for(i in 1:length(packages)){
 
 load("data/dat.Rda")
 
+# slope priors:
+
+log(260)- log(240) # rounded to 0.1
+(log(260)- log(240))*2 # 2x SD
 
 ###### LMM analysis:
 
@@ -84,16 +88,16 @@ contrasts(dat$del)
 
 
 #### Model parameters:
-NwarmUp<- 500
-Niter<- 2000
-Nchains<- 4
+NwarmUp<- 1000
+Niter<- 6000
+Nchains<- 10
 
 if(!file.exists("Models/Bayesian/LM1.Rda")){
   LM1<- brm(formula = log(N1) ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp, iter = Niter, chains = Nchains,
-            sample_prior = TRUE, cores = detectCores(),
-            prior =  c(set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV'),
-                       set_prior('normal(0, 0.2)', class = 'b', coef= 'del120'),
-                       set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:del120'),
+            sample_prior = TRUE, cores = detectCores(), seed= 1234, control = list(adapt_delta = 0.9),
+            prior =  c(set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 0.1)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV:del120'),
                        set_prior('normal(0, 5)', class = 'Intercept')))
   
   save(LM1, file= "Models/Bayesian/LM1.Rda")
@@ -108,26 +112,37 @@ prior_summary(LM1)
 
 ## Bayes factors:
 
-# Note: the Bayes Factor is BH_01, so values >1 indicate evidence for the null, and values <1 indicate 
-# evidence in support of the alternative
+# Note: the Bayes Factor is BH_10, so values >1 indicate evidence for the alternative, and values <1 indicate 
+# evidence in support of the null. Brms reports them the other way around, but I reverse them here because I 
+# Think BF_10 reporting is somewhat more common
+
+# intercept:
+BF_intercept = hypothesis(LM1, hypothesis = 'Intercept = 0', seed= 1234)  # H0: Intercept =0 
+1/BF_intercept$hypothesis$Evid.Ratio
 
 # sound effect:
-BF_sound = hypothesis(LM1, hypothesis = 'sound_typeDEV = 0')  # H0: No sound effect
-BF_sound$hypothesis
+BF_sound = hypothesis(LM1, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+1/BF_sound$hypothesis$Evid.Ratio
 
 # delay effect:
-BF_del = hypothesis(LM1, hypothesis = 'del120 = 0')  # H0: No delay effect
-BF_del$hypothesis
+BF_del = hypothesis(LM1, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+1/BF_del$hypothesis$Evid.Ratio
 
 # interaction effect:
-BF_int = hypothesis(LM1, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound x delay interaction
-BF_int$hypothesis
+BF_int = hypothesis(LM1, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+1/BF_int$hypothesis$Evid.Ratio
 
 
 ###########################
 #      SACCADE DATA:      #
 ###########################
 
+
+# prior
+log(30)- log(25) # rounded to 0.2
+(log(30)- log(25))*2 # 2x SD
+
+# rounded to 20
 
 ####
 # LMM analyses:
@@ -138,7 +153,7 @@ contrasts(dat$del)
 # saccade duration:
 if(!file.exists("Models/Bayesian/LM2.Rda")){
   LM2<- brm(formula = log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (1|item), data = dat, warmup = NwarmUp,
-            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),
+            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
             prior =  c(set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV'),
                        set_prior('normal(0, 0.2)', class = 'b', coef= 'del120'),
                        set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:del120'),
@@ -155,44 +170,37 @@ prior_summary(LM2)
 
 ## Bayes factors:
 
-# Note: the Bayes Factor is BH_01, so values >1 indicate evidence for the null, and values <1 indicate 
-# evidence in support of the alternative
 
 # sound effect:
-BF_sound2 = hypothesis(LM2, hypothesis = 'sound_typeDEV = 0')  # H0: No sound effect
-BF_sound2$hypothesis
+BF_sound2 = hypothesis(LM2, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+1/BF_sound2$hypothesis$Evid.Ratio
 
 # delay effect:
-BF_del2 = hypothesis(LM2, hypothesis = 'del120 = 0')  # H0: No delay effect
-BF_del2$hypothesis
+BF_del2 = hypothesis(LM2, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+1/BF_del2$hypothesis$Evid.Ratio
 
 # interaction effect:
-BF_int2 = hypothesis(LM2, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound x delay interaction
-BF_int2$hypothesis
+BF_int2 = hypothesis(LM2, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+1/BF_int2$hypothesis$Evid.Ratio
 
 
-if(!file.exists("Models/LM2.Rda")){
-  summary(LM2<- lmer(log(sacc_dur) ~ sound_type*del + (sound_type|sub)+ (1|item),
-             data= dat))
-  save(LM2, file= "Models/LM2.Rda")
-}else{
-  load("Models/LM2.Rda")
-}
-
-SLM2<- round(coef(summary(LM2)), 3)
-rownames(SLM2)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SLM2, file = "Models/SLM2_saccDur.csv")
 
 ####
+
+
+# prior
+# not transformed, typical values in humans are 200-300 deg/s
+
+
 # peak saccade velocity:
 
 if(!file.exists("Models/Bayesian/LM3.Rda")){
   LM3<- brm(formula = sacc_peak ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp,
-            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),
-            prior =  c(set_prior('normal(0, 2)', class = 'b', coef= 'sound_typeDEV'),
-                       set_prior('normal(0, 2)', class = 'b', coef= 'del120'),
-                       set_prior('normal(0, 2)', class = 'b', coef= 'sound_typeDEV:del120'),
-                       set_prior('normal(0, 250)', class = 'Intercept')))
+            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
+            prior =  c(set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 25)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV:del120'),
+                       set_prior('normal(0, 125)', class = 'Intercept')))
   
   save(LM3, file= "Models/Bayesian/LM3.Rda")
 }else{
@@ -205,59 +213,93 @@ prior_summary(LM3)
 
 ## Bayes factors:
 
-# Note: the Bayes Factor is BH_01, so values >1 indicate evidence for the null, and values <1 indicate 
-# evidence in support of the alternative
-
 # sound effect:
-BF_sound3 = hypothesis(LM3, hypothesis = 'sound_typeDEV = 0')  # H0: No sound effect
-BF_sound3$hypothesis
+BF_sound3 = hypothesis(LM3, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+1/BF_sound3$hypothesis$Evid.Ratio
 
 # delay effect:
-BF_del3 = hypothesis(LM3, hypothesis = 'del120 = 0')  # H0: No delay effect
-BF_del3$hypothesis
+BF_del3 = hypothesis(LM3, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+1/BF_del3$hypothesis$Evid.Ratio
 
 # interaction effect:
-BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0')  # H0: No sound x delay interaction
-BF_int3$hypothesis
+BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+1/BF_int3$hypothesis$Evid.Ratio
 
-if(!file.exists("Models /LM3.Rda")){
-  summary(LM3<- lmer(sacc_peak ~ sound_type*del + (del|sub)+ (1|item),
-             data= dat))
-  save(LM3, file= "Models/LM3.Rda")
-}else{
-  load("Models/LM3.Rda")
-}
 
-SLM3<- round(coef(summary(LM3)), 3)
-rownames(SLM3)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SLM3, file = "Models/SLM3_PeakVel.csv")
 
 ####
 # average saccade velocity:
-if(!file.exists("Models/LM4.Rda")){
-  summary(LM4<- lmer(sacc_vel ~ sound_type*del + (del|sub)+ (1|item),
-             data= dat))
-  save(LM4, file= "Models/LM4.Rda")
-}else{
-  load("Models/LM4.Rda")
-}
+  
+  if(!file.exists("Models/Bayesian/LM4.Rda")){
+    LM4<- brm(formula = sacc_vel ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp,
+              iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
+              prior =  c(set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV'),
+                         set_prior('normal(0, 25)', class = 'b', coef= 'del120'),
+                         set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV:del120'),
+                         set_prior('normal(0, 125)', class = 'Intercept')))
+    
+    save(LM4, file= "Models/Bayesian/LM4.Rda")
+  }else{
+    load("Models/Bayesian/LM4.Rda")
+  }
+  
+  summary(LM4)
+  prior_summary(LM4)
+  
+  
+  ## Bayes factors:
 
-SLM4<- round(coef(summary(LM4)), 3)
-rownames(SLM4)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SLM4, file = "Models/SLM4_AvgVel.csv")
+  # sound effect:
+  BF_sound4 = hypothesis(LM4, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+  1/BF_sound4$hypothesis$Evid.Ratio
+  
+  # delay effect:
+  BF_del4 = hypothesis(LM4, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+  1/BF_del4$hypothesis$Evid.Ratio
+  
+  # interaction effect:
+  BF_int4 = hypothesis(LM4, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+  1/BF_int4$hypothesis$Evid.Ratio
+  
+
 
 ####
 # saccade amplitude:
-if(!file.exists("Models/LM5.Rda")){
-  summary(LM5<- lmer(log(sacc_ampl) ~ sound_type*del + (sound_type|sub)+ (1|item),
-             data= dat))
-  save(LM5, file= "Models/LM5.Rda")
-}else{
-  load("Models/LM5.Rda")
-}
-
-SLM5<- round(coef(summary(LM5)), 3)
-rownames(SLM5)<- c("Intercept", "Sound (Novel vs STD)", "Delay (120 vs 0ms)", "Sound x Delay")
-write.csv2(SLM5, file = "Models/SLM5_SaccAmpl.csv")
+  
+  # prior: 
+  log(2.2) - log (1.9) # rounded to 0.15
+  (log(2.2) - log (1.9))*2 # 2x SD
+  
+  
+  if(!file.exists("Models/Bayesian/LM5.Rda")){
+    LM5<- brm(formula = log(sacc_ampl) ~ sound_type*del + (sound_type|sub)+ (1|item), data = dat, warmup = NwarmUp,
+              iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(), seed= 1234, control = list(adapt_delta = 0.9),
+              prior =  c(set_prior('normal(0, 0.15)', class = 'b', coef= 'sound_typeDEV'),
+                         set_prior('normal(0, 0.15)', class = 'b', coef= 'del120'),
+                         set_prior('normal(0, 0.15)', class = 'b', coef= 'sound_typeDEV:del120'),
+                         set_prior('normal(0, 5)', class = 'Intercept')))
+    
+    save(LM5, file= "Models/Bayesian/LM5.Rda")
+  }else{
+    load("Models/Bayesian/LM5.Rda")
+  }
+  
+  summary(LM5)
+  prior_summary(LM5)
+  
+  
+  ## Bayes factors:
+  
+  # sound effect:
+  BF_sound5 = hypothesis(LM5, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+  1/BF_sound5$hypothesis$Evid.Ratio
+  
+  # delay effect:
+  BF_del5 = hypothesis(LM5, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+  1/BF_del5$hypothesis$Evid.Ratio
+  
+  # interaction effect:
+  BF_int5 = hypothesis(LM5, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+  1/BF_int5$hypothesis$Evid.Ratio
 
 
