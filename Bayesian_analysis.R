@@ -106,8 +106,9 @@ if(!file.exists("Models/Bayesian/LM1.Rda")){
 }
 
 
-summary(LM1)
+print(LM1, digits = 3)
 prior_summary(LM1)
+VarCorr(LM1)
 
 
 ## Bayes factors:
@@ -117,6 +118,15 @@ prior_summary(LM1)
 # Think BF_10 reporting is somewhat more common
 
 # intercept:
+LM1_null<- brm(formula = log(N1) ~ 0+ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp, iter = Niter, chains = Nchains,
+          sample_prior = TRUE, cores = detectCores(), seed= 1234, control = list(adapt_delta = 0.9),
+          prior =  c(set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV'),
+                     set_prior('normal(0, 0.1)', class = 'b', coef= 'del120'),
+                     set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV:del120')))
+
+
+
+
 BF_intercept = hypothesis(LM1, hypothesis = 'Intercept = 0', seed= 1234)  # H0: Intercept =0 
 1/BF_intercept$hypothesis$Evid.Ratio
 
@@ -164,8 +174,9 @@ if(!file.exists("Models/Bayesian/LM2.Rda")){
   load("Models/Bayesian/LM2.Rda")
 }
 
-summary(LM2)
+print(LM2, digits = 3)
 prior_summary(LM2)
+VarCorr(LM2)
 
 
 ## Bayes factors:
@@ -207,9 +218,9 @@ if(!file.exists("Models/Bayesian/LM3.Rda")){
   load("Models/Bayesian/LM3.Rda")
 }
 
-summary(LM3)
+print(LM3, digits = 3)
 prior_summary(LM3)
-
+VarCorr(LM3)
 
 ## Bayes factors:
 
@@ -243,8 +254,9 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
     load("Models/Bayesian/LM4.Rda")
   }
   
-  summary(LM4)
+  print(LM4, digits= 3)
   prior_summary(LM4)
+  VarCorr(LM4)
   
   
   ## Bayes factors:
@@ -284,8 +296,9 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
     load("Models/Bayesian/LM5.Rda")
   }
   
-  summary(LM5)
+  print(LM5, digits=3)
   prior_summary(LM5)
+  VarCorr(LM5)
   
   
   ## Bayes factors:
@@ -302,4 +315,10 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
   BF_int5 = hypothesis(LM5, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
   1/BF_int5$hypothesis$Evid.Ratio
 
+  
+  #####
+  # First-pass re-fixation probability
+  
+  
+  
 
