@@ -195,9 +195,9 @@ BF_int2 = hypothesis(LM2, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
 if(!file.exists("Models/Bayesian/LM3.Rda")){
   LM3<- brm(formula = sacc_peak ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp,
             iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
-            prior =  c(set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV'),
-                       set_prior('normal(0, 25)', class = 'b', coef= 'del120'),
-                       set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV:del120'),
+            prior =  c(set_prior('normal(0, 30)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 30)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 30)', class = 'b', coef= 'sound_typeDEV:del120'),
                        set_prior('normal(0, 125)', class = 'Intercept')))
   
   save(LM3, file= "Models/Bayesian/LM3.Rda")
@@ -231,9 +231,9 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
   if(!file.exists("Models/Bayesian/LM4.Rda")){
     LM4<- brm(formula = sacc_vel ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp,
               iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
-              prior =  c(set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV'),
-                         set_prior('normal(0, 25)', class = 'b', coef= 'del120'),
-                         set_prior('normal(0, 25)', class = 'b', coef= 'sound_typeDEV:del120'),
+              prior =  c(set_prior('normal(0, 30)', class = 'b', coef= 'sound_typeDEV'),
+                         set_prior('normal(0, 30)', class = 'b', coef= 'del120'),
+                         set_prior('normal(0, 30)', class = 'b', coef= 'sound_typeDEV:del120'),
                          set_prior('normal(0, 125)', class = 'Intercept')))
     
     save(LM4, file= "Models/Bayesian/LM4.Rda")
@@ -304,6 +304,10 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
 
   
   #####
+  
+  # prior
+  logit(0.2) - logit(0.10) # rounded down to 0.75
+  
   # First-pass re-fixation probability
   if(!file.exists("Models/Bayesian/GM1.Rda")){
     GM1<- brm(formula = refix_prob ~ sound_type*del + (1|sub)+ (del|item), data = dat, family= bernoulli, warmup = NwarmUp,
