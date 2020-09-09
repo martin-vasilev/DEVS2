@@ -158,10 +158,11 @@ ggsave(Plot, filename = "Plots/FFD_mainFig.pdf", width = 6, height = 6)
 
 # sound timing:
 t0<- subset(dat, del== 0)
-mean(t0$SOD)
+mean(t0$delFix, na.rm= T)
 
-t120<- subset(dat, del== 120 & delFix> -50)
-mean(t120$SOD)
+t120<- subset(dat, del== 120)
+mean(t120$delFix, na.rm= T)+120
+
 
 ###### LMM analysis:
 
@@ -408,7 +409,8 @@ levels(df$Sound)
 P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound))+  
   coord_cartesian(xlim = c(80, 800))+
   theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Survival (%)")+
-  ggtitle("a) 0 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 152, color= "#8f8f8f")+ 
+  ggtitle("a) Survival (0 ms delay)")+theme(plot.title = element_text(hjust = 0.5), legend.position = c(0.85, 0.4))+
+  geom_vline(xintercept = 152, color= "#8f8f8f")+ 
   geom_vline(xintercept = 130, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 185, linetype= "dashed", 
                                                                                color= "#8f8f8f") + 
 #  geom_rect(fill= pallete1[5], color="black", alpha=0.005, show.legend = F, inherit.aes = T)+
@@ -420,6 +422,17 @@ P1<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound
   #      panel.grid.minor = element_line(colour= "#f4f5f7", size=0.2)); P1
 
 ggsave(filename = "Plots/Survival0ms.pdf", plot = P1, width = 7, height = 5)
+
+#########################################################################
+
+c1_0<- subset(df, Sound=="Standard")
+c2_0<- subset(df, Sound=="Novel")
+
+c_p0<- data.frame(dur= c1_0$d, diff= c2_0$dp- c1_0$dp)
+
+pc_0 <- ggplot(c_p0, aes(x=diff)) + geom_density() + scale_x_continuous(breaks= seq(100,1000,100)); pc_0
+
+#########################################################################
 
 #####
 # 120 ms
@@ -460,7 +473,7 @@ levels(df$Sound)
 P2<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound)) +
   coord_cartesian(xlim = c(80, 800))+
   theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Survival (%)")+
-  ggtitle("b) 120 ms delay")+theme(plot.title = element_text(hjust = 0.5))+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
+  ggtitle("b) Survival (120 ms delay)")+theme(plot.title = element_text(hjust = 0.5), legend.position = c(0.85, 0.4))+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
   geom_vline(xintercept = 149, linetype= "dashed", color= "#8f8f8f") + geom_vline(xintercept = 198, linetype= "dashed", 
   color= "#8f8f8f") + geom_line()+ 
   annotate("text", x = 500, y = 85, label = "Divergence point= 178 ms [95% CI: 149, 198]")+
@@ -474,37 +487,67 @@ P2<- ggplot(data=df, aes(x= d, y=dp, group= Sound, linetype= Sound, color= Sound
 ggsave(filename = "Plots/Survival120ms.pdf", plot = P2, width = 7, height = 5)
 
 
+
+
+#########################################################################
+
+c1_120<- subset(df, Sound=="Standard")
+c2_120<- subset(df, Sound=="Novel")
+
+c_p120<- data.frame(dur= c1_120$d, diff= c2_120$dp- c1_120$dp)
+
+pc_120 <- ggplot(c_p120, aes(x=diff)) + geom_density() + scale_x_continuous(breaks= seq(100,1000,100)); pc_120
+
+plot(c_p0$dur, c_p0$diff, col= 'red', ylim = c(0, 15))
+points(c_p120$dur, c_p120$diff, col= 'purple')
+
+c_p0$Delay<- "0 ms"
+c_p120$Delay<- "120 ms"
+
+c_diff<- rbind(c_p0, c_p120)
+
+
+
+### Survival difference plot:
+P3<- ggplot(data=c_diff, aes(x= dur, y=diff, group= Delay, linetype= Delay, color= Delay)) +
+  coord_cartesian(xlim = c(80, 800), ylim= c(0, 18))+
+  theme_classic(14)+ xlab("First fixation duration (ms)") + ylab("Diff. in survival (NOV- STD) in %")+
+  ggtitle("c) Survival difference (Novel- Standard)")+theme(plot.title = element_text(hjust = 0.5), legend.position = c(0.85, 0.4))+   #+ geom_vline(xintercept = 178, color= "#8f8f8f")+ 
+  geom_line()+ scale_color_manual(values= c("#999999", "#E69F00"))+
+  scale_x_continuous(breaks= seq(0,1000,100))
+
+
+## Add point of greatest difference:
+max_0<- c_p0$dur[which(c_p0$diff== max(c_p0$diff))]
+ P3<- P3+ annotate("text", x = max_0+50, y = 7.5, label = paste("max diff.= ", toString(max_0), ' ms', sep= ''), col= "#999999")#+
+#    geom_curve(
+#     aes(x = max_0, y = 6.9, xend = max_0+45, yend = 7.4),
+#     arrow = arrow(length = unit(0.02, "npc"), type = "open"), inherit.aes = F, col= "#999999")
+
+max_120<- c_p120$dur[which(c_p120$diff== max(c_p120$diff))]
+P3<- P3+ annotate("text", x = max_120+50, y = 16.5, label = paste("max diff.= ", toString(max_120), ' ms', sep= ''), col= "#E69F00")
+
+# P3+  geom_vline(xintercept = 178, linetype= "dashed", color= "#8f8f8f", ) 
+# P3+  geom_vline(xintercept = 152, linetype= "dashed", color= "#8f8f8f") 
+
+#P3+ geom_raster(aes(fill = density))
+
+### Add E-Z Reader stages:
+#P3<- P3+  geom_rect(aes(xmin= 4, xmax= 124, ymin= -1.5, ymax= -1), color=NA, inherit.aes=FALSE)
+
+
+
+ggsave(filename = "Plots/Survival_diff.pdf", plot = P3, width = 7, height = 5)
+
+#########################################################################
+
 # merge plots:
 
-figure <- ggarrange(P1, P2, ncol = 1, nrow = 2, common.legend = TRUE, legend = "bottom", align = "h")
-ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=7, units= "in")
+figure <- ggarrange(P1, P2, P3, ncol = 1, nrow = 3, common.legend = F, align = "h")
+ggsave("Plots/Survival_Merged.pdf", figure, width= 7, height=9, units= "in")
 
 
 
-########################################################################################################################################
-#                                                      Bayes Factor Analyses                                                           #
-########################################################################################################################################
-#
-
-dat$N1_log<- log(dat$N1)
-dat$sub<- as.factor(dat$sub)
-dat$item<- as.factor(dat$item)
-
-
-# sound effect:
-summary(FD<- lmBF(N1_log~  sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
-summary(FD2<- lmBF(N1_log~ sound_type + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
-
-FD2/FD
-
-# delay effect:
-summary(FD3<- lmBF(N1_log~ del + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
-FD3/FD
-
-# Sound x Delay interaction:
-summary(FD4<- lmBF(N1_log~ sound_type+ del + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
-summary(FD5<- lmBF(N1_log~ sound_type*del + sub+item, data= dat, whichRandom = c('sub', 'item'), rscaleFixed = sqrt(2)/2))
-FD5/FD4
 
 ########################################################################################################################################
 #                                        First-pass re-fixation probability                                                            #
