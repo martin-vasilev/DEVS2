@@ -48,7 +48,7 @@ rm(list= ls())
 pallete1= c("#CA3542", "#27647B", "#849FA0", "#AECBC9", "#57575F") # "Classic & trustworthy"
 
 # load/ install required packages:
-packages= c("reshape", "brms", "ggpubr", "grid", "emmeans", "parallel") # list of used packages:
+packages= c("reshape", "brms", "ggpubr", "grid", "emmeans", "parallel", "boot") # list of used packages:
 
 for(i in 1:length(packages)){
   
@@ -116,19 +116,6 @@ VarCorr(LM1)
 # Note: the Bayes Factor is BH_10, so values >1 indicate evidence for the alternative, and values <1 indicate 
 # evidence in support of the null. Brms reports them the other way around, but I reverse them here because I 
 # Think BF_10 reporting is somewhat more common
-
-# intercept:
-LM1_null<- brm(formula = log(N1) ~ 0+ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp, iter = Niter, chains = Nchains,
-          sample_prior = TRUE, cores = detectCores(), seed= 1234, control = list(adapt_delta = 0.9),
-          prior =  c(set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV'),
-                     set_prior('normal(0, 0.1)', class = 'b', coef= 'del120'),
-                     set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV:del120')))
-
-
-
-
-BF_intercept = hypothesis(LM1, hypothesis = 'Intercept = 0', seed= 1234)  # H0: Intercept =0 
-1/BF_intercept$hypothesis$Evid.Ratio
 
 # sound effect:
 BF_sound = hypothesis(LM1, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
@@ -318,7 +305,37 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
   
   #####
   # First-pass re-fixation probability
-  
-  
-  
+  if(!file.exists("Models/Bayesian/GM1.Rda")){
+    GM1<- brm(formula = refix_prob ~ sound_type*del + (1|sub)+ (del|item), data = dat, family= bernoulli, warmup = NwarmUp,
+              iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(), seed= 1234, control = list(adapt_delta = 0.9),
+              prior =  c(set_prior('normal(0, 0.75)', class = 'b', coef= 'sound_typeDEV'),
+                         set_prior('normal(0, 0.75)', class = 'b', coef= 'del120'),
+                         set_prior('normal(0, 0.75)', class = 'b', coef= 'sound_typeDEV:del120'),
+                         set_prior('normal(0, 3)', class = 'Intercept')))
 
+    
+    save(GM1, file= "Models/Bayesian/GM1.Rda")
+  }else{
+    load("Models/Bayesian/GM1.Rda")
+  }
+  
+  print(GM1, digits=3)
+  prior_summary(GM1)
+  VarCorr(GM1)
+    
+  
+  ## Bayes factors:
+  
+  # sound effect:
+  BF_sound6 = hypothesis(GM1, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+  1/BF_sound6$hypothesis$Evid.Ratio
+  
+  # delay effect:
+  BF_del6 = hypothesis(GM1, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+  1/BF_del6$hypothesis$Evid.Ratio
+  
+  # interaction effect:
+  BF_int6 = hypothesis(GM1, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+  1/BF_int6$hypothesis$Evid.Ratio
+    
+  
