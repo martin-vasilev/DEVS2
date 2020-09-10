@@ -343,3 +343,134 @@ BF_int3 = hypothesis(LM3, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  
   1/BF_int6$hypothesis$Evid.Ratio
     
   
+  
+  
+  
+########################################################################################################################
+#                         Modulation by type of saccade (intra-line vs inter-line)
+########################################################################################################################
+  
+
+# check contrast coding
+contrasts(dat$sound_type)
+contrasts(dat$del)
+  
+dat$next_sacc_type<- as.factor(dat$next_sacc_type)
+contrasts(dat$next_sacc_type)<- c(1, 0)
+contrasts(dat$next_sacc_type)
+
+
+
+#### Saccade duration:  
+if(!file.exists("Models/Bayesian/SaccType/LM2s.Rda")){
+  LM2s<- brm(formula = log(sacc_dur) ~ sound_type*del*next_sacc_type + (sound_type|sub)+ (1|item), data = dat, warmup = NwarmUp,
+            iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
+            prior =  c(set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 0.4)', class = 'b', coef= 'next_sacc_type1'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:del120'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'del120:next_sacc_type1'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:del120:next_sacc_type1'),
+                       set_prior('normal(0, 0.2)', class = 'b', coef= 'sound_typeDEV:next_sacc_type1'),
+                       set_prior('normal(0, 5)', class = 'Intercept')))
+  
+  save(LM2s, file= "Models/Bayesian/SaccType/LM2s.Rda")
+}else{
+  load("Models/Bayesian/SaccType/LM2s.Rda")
+}
+
+print(LM2s, digits = 3)
+prior_summary(LM2s)
+VarCorr(LM2s)
+
+
+## Bayes factors:
+
+
+# sound effect:
+BF_sound2s = hypothesis(LM2s, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+1/BF_sound2s$hypothesis$Evid.Ratio
+
+# delay effect:
+BF_del2s = hypothesis(LM2s, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+1/BF_del2s$hypothesis$Evid.Ratio
+
+# sacc_type effect:
+BF_sacc2s = hypothesis(LM2s, hypothesis = 'next_sacc_type1 = 0', seed= 1234)  # H0: No delay effect
+1/BF_sacc2s$hypothesis$Evid.Ratio
+
+# Sound x Delay interaction effect:
+BF_int2s1 = hypothesis(LM2s, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+1/BF_int2s1$hypothesis$Evid.Ratio
+
+  
+# Sound x SaccType interaction effect:
+BF_int2s2 = hypothesis(LM2s, hypothesis = 'sound_typeDEV:next_sacc_type1 = 0', seed= 1234)  # No Sound x SaccType interaction
+1/BF_int2s2$hypothesis$Evid.Ratio
+  
+# Delay x SaccType interaction effect:
+BF_int2s3 = hypothesis(LM2s, hypothesis = 'del120:next_sacc_type1 = 0', seed= 1234)  # No Delay x SaccType interaction
+1/BF_int2s3$hypothesis$Evid.Ratio
+
+# Sound x Delay x SaccType interaction effect:
+BF_int2s4 = hypothesis(LM2s, hypothesis = 'sound_typeDEV:del120:next_sacc_type1 = 0', seed= 1234)  # No Sound x Delay x SaccType interaction
+1/BF_int2s4$hypothesis$Evid.Ratio
+
+
+
+
+
+#### Saccade amplitude:  
+if(!file.exists("Models/Bayesian/SaccType/LM5s.Rda")){
+  LM5s<- brm(formula = log(sacc_ampl) ~ sound_type*del*next_sacc_type + (sound_type|sub)+ (1|item), data = dat, warmup = NwarmUp,
+             iter = Niter, chains = Nchains, sample_prior = TRUE, cores = detectCores(),  seed= 1234, control = list(adapt_delta = 0.9),
+             prior =  c(set_prior('normal(0, 0.15)', class = 'b', coef= 'sound_typeDEV'),
+                        set_prior('normal(0, 1)', class = 'b', coef= 'next_sacc_type1'),
+                        set_prior('normal(0, 0.15)', class = 'b', coef= 'del120'),
+                        set_prior('normal(0, 0.15)', class = 'b', coef= 'sound_typeDEV:del120'),
+                        set_prior('normal(0, 0.15)', class = 'b', coef= 'del120:next_sacc_type1'),
+                        set_prior('normal(0, 0.15)', class = 'b', coef= 'sound_typeDEV:del120:next_sacc_type1'),
+                        set_prior('normal(0, 0.15)', class = 'b', coef= 'sound_typeDEV:next_sacc_type1'),
+                        set_prior('normal(0, 5)', class = 'Intercept')))
+  
+  save(LM5s, file= "Models/Bayesian/SaccType/LM5s.Rda")
+}else{
+  load("Models/Bayesian/SaccType/LM5s.Rda")
+}
+
+print(LM5s, digits = 3)
+prior_summary(LM5s)
+VarCorr(LM5s)
+
+
+## Bayes factors:
+
+
+# sound effect:
+BF_sound5s = hypothesis(LM5s, hypothesis = 'sound_typeDEV = 0', seed= 1234)  # H0: No sound effect
+1/BF_sound5s$hypothesis$Evid.Ratio
+
+# delay effect:
+BF_del5s = hypothesis(LM5s, hypothesis = 'del120 = 0', seed= 1234)  # H0: No delay effect
+1/BF_del5s$hypothesis$Evid.Ratio
+
+# sacc_type effect:
+BF_sacc5s = hypothesis(LM5s, hypothesis = 'next_sacc_type1 = 0', seed= 1234)  # H0: No delay effect
+1/BF_sacc5s$hypothesis$Evid.Ratio
+
+# Sound x Delay interaction effect:
+BF_int5s1 = hypothesis(LM5s, hypothesis = 'sound_typeDEV:del120 = 0', seed= 1234)  # H0: No sound x delay interaction
+1/BF_int5s1$hypothesis$Evid.Ratio
+
+
+# Sound x SaccType interaction effect:
+BF_int5s2 = hypothesis(LM5s, hypothesis = 'sound_typeDEV:next_sacc_type1 = 0', seed= 1234)  # No Sound x SaccType interaction
+1/BF_int5s2$hypothesis$Evid.Ratio
+
+# Delay x SaccType interaction effect:
+BF_int5s3 = hypothesis(LM5s, hypothesis = 'del120:next_sacc_type1 = 0', seed= 1234)  # No Delay x SaccType interaction
+1/BF_int5s3$hypothesis$Evid.Ratio
+
+# Sound x Delay x SaccType interaction effect:
+BF_int5s4 = hypothesis(LM5s, hypothesis = 'sound_typeDEV:del120:next_sacc_type1 = 0', seed= 1234)  # No Sound x Delay x SaccType interaction
+1/BF_int5s4$hypothesis$Evid.Ratio
