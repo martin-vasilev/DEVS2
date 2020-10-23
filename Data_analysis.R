@@ -519,21 +519,20 @@ P3<- ggplot(data=c_diff, aes(x= dur, y=diff, group= Delay, linetype= Delay, colo
 
 ## Add point of greatest difference:
 max_0<- c_p0$dur[which(c_p0$diff== max(c_p0$diff))]
- P3<- P3+ annotate("text", x = max_0+50, y = 7.5, label = paste("max diff.= ", toString(max_0), ' ms', sep= ''), col= "#999999")#+
-#    geom_curve(
-#     aes(x = max_0, y = 6.9, xend = max_0+45, yend = 7.4),
-#     arrow = arrow(length = unit(0.02, "npc"), type = "open"), inherit.aes = F, col= "#999999")
+DP0<- c_p0$diff[which(c_p0$dur== 152)]
+ P3<- P3+ annotate("text", x = max_0+50, y = 7.5, label = paste("max diff.= ", toString(max_0), ' ms', sep= ''), col= "#999999")
+### 
+   # geom_segment(aes(x = 152, y = DP0+0.5, xend = 152-30, yend = DP0+1.5), col= "#999999", inherit.aes = F, size= 0.2,
+   #              arrow = arrow(length = unit(0.2, "cm"), ends = 'first'))
+   
 
+###
 max_120<- c_p120$dur[which(c_p120$diff== max(c_p120$diff))]
+DP120<- c_p120$diff[which(c_p120$dur== 178)]
 P3<- P3+ annotate("text", x = max_120+50, y = 16.5, label = paste("max diff.= ", toString(max_120), ' ms', sep= ''), col= "#E69F00")
-
-# P3+  geom_vline(xintercept = 178, linetype= "dashed", color= "#8f8f8f", ) 
-# P3+  geom_vline(xintercept = 152, linetype= "dashed", color= "#8f8f8f") 
-
-#P3+ geom_raster(aes(fill = density))
-
-### Add E-Z Reader stages:
-#P3<- P3+  geom_rect(aes(xmin= 4, xmax= 124, ymin= -1.5, ymax= -1), color=NA, inherit.aes=FALSE)
+  
+  # geom_segment(aes(x = 178, y = DP120+0.5, xend = 178-30, yend = DP120+1.5), col= "#E69F00", inherit.aes = F, size= 0.2,
+  #              arrow = arrow(length = unit(0.2, "cm"), ends = 'first'))
 
 
 

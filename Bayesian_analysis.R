@@ -69,7 +69,7 @@ load("data/dat.Rda")
 
 # slope priors:
 
-log(260)- log(240) # rounded to 0.1
+log(260)- log(240) # 0.08
 (log(260)- log(240))*2 # 2x SD
 
 ###### LMM analysis:
@@ -95,9 +95,9 @@ Nchains<- 10
 if(!file.exists("Models/Bayesian/LM1.Rda")){
   LM1<- brm(formula = log(N1) ~ sound_type*del + (del|sub)+ (1|item), data = dat, warmup = NwarmUp, iter = Niter, chains = Nchains,
             sample_prior = TRUE, cores = detectCores(), seed= 1234, control = list(adapt_delta = 0.9),
-            prior =  c(set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV'),
-                       set_prior('normal(0, 0.1)', class = 'b', coef= 'del120'),
-                       set_prior('normal(0, 0.1)', class = 'b', coef= 'sound_typeDEV:del120'),
+            prior =  c(set_prior('normal(0, 0.08)', class = 'b', coef= 'sound_typeDEV'),
+                       set_prior('normal(0, 0.08)', class = 'b', coef= 'del120'),
+                       set_prior('normal(0, 0.08)', class = 'b', coef= 'sound_typeDEV:del120'),
                        set_prior('normal(0, 5)', class = 'Intercept')))
   
   save(LM1, file= "Models/Bayesian/LM1.Rda")
